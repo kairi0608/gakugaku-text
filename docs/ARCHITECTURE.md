@@ -1,0 +1,3 @@
+# アーキテクチャ
+
+Custom GPTはBearer認証されたAction APIへ構造化教材だけを登録します。Action APIはservice roleをサーバー内だけで用い、下書きとハッシュ化tokenを原子的に保存します。HubはSupabase Authで本人確認し、RPCでclaimを一度だけ実行します。教材は`materials`と不変の`material_versions`へ分離し、課題は版IDへ固定します。ブラウザはanon keyとユーザーセッションだけを使い、権限境界はページ/APIの認可とRLSで二重化します。

@@ -1,0 +1,1 @@
+import {requireUser} from "@/lib/auth/require-user";export default async function Page(){await requireUser();return <main className="shell"><header><h1>バージョン履歴</h1></header><div className="card"><h2>教材の版を固定して保存</h2><p className="muted">課題は配布時点のmaterial_version_idを参照します。</p></div></main>}
