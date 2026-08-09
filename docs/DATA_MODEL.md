@@ -1,3 +1,4 @@
-# データモデル
+# Data model
 
-教材本体は所有権と現在版を持つ`materials`、内容スナップショットを持つ`material_versions`、private Storage参照を持つ`material_assets`から成ります。公開版はtriggerで更新・削除を拒否します。`assignments.material_version_id`と提出回答により、後の教材編集が既存課題へ影響しません。クラス、所属、課題、提出、回答、フィードバック、教師コメントは別テーブルです。外部下書き、Action冪等性、claim tokenも分離しています。
+`materials` は教材の論理ID、`material_versions` は変更不能な版を持ちます。attemptは常に回答時のversionを参照します。画像はDBに相対パスのみ保存します。charactersはstage・level・expを持ち、attemptの`exp_awarded`で重複付与を防ぎます。
+

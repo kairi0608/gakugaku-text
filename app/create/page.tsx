@@ -1,0 +1,2 @@
+import {CreateForm} from "./CreateForm";export default function Page(){return <main className="shell"><header className="page-head"><div><span className="eyebrow">AI教材スタジオ</span><h1>学びを、物語にしよう。</h1><p>条件を入れてボタンを押すだけ。問題・正答・解説・レイアウトをまとめて保存します。</p></div></header>{!process.env.OPENAI_API_KEY&&<p className="notice">OPENAI_API_KEYが未設定です。今は安全なローカル教材生成で動作します。AI画像・AI文章生成を使うには設定画面をご確認ください。</p>}<CreateForm/></main>}
+

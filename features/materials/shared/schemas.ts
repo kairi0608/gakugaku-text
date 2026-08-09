@@ -1,15 +1,38 @@
 import { z } from "zod";
 
-const area = z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1), width: z.number().positive().max(1), height: z.number().positive().max(1) }).strict().refine(v => v.x + v.width <= 1 && v.y + v.height <= 1, "回答領域が教材面を超えています");
-const choice = z.object({ id: z.string().min(1), label: z.string().min(1) }).strict();
-const question = z.object({ id: z.string().min(1), pageId: z.string().min(1), order: z.number().int().nonnegative(), prompt: z.string().min(1), instructions: z.string().optional(), answerType: z.enum(["text", "number", "choice", "multiple-choice", "drawing"]), choices: z.array(choice).optional(), correctAnswer: z.string().min(1), explanation: z.string().min(1), answerArea: area.optional() }).strict();
+const base = z.object({ id: z.string().min(1) }).strict();
+export const materialBlockSchema = z.discriminatedUnion("type", [
+  base.extend({ type: z.literal("title"), text: z.string() }).strict(),
+  base.extend({ type: z.literal("subtitle"), text: z.string() }).strict(),
+  base.extend({ type: z.literal("illustration"), assetId: z.string(), alt: z.string() }).strict(),
+  base.extend({ type: z.literal("character"), assetId: z.string(), alt: z.string() }).strict(),
+  base.extend({ type: z.literal("example"), title: z.string(), text: z.string() }).strict(),
+  base.extend({ type: z.literal("point"), title: z.string(), text: z.string() }).strict(),
+  base.extend({ type: z.literal("question"), questionId: z.string() }).strict(),
+  base.extend({ type: z.literal("speech-bubble"), text: z.string() }).strict(),
+  base.extend({ type: z.literal("answer-field"), questionId: z.string() }).strict(),
+  base.extend({ type: z.literal("footer-message"), text: z.string() }).strict(),
+]);
+
+export const questionSchema = z.object({
+  id: z.string(), pageId: z.string(), order: z.number().int().positive(), title: z.string().optional(),
+  narrative: z.string().optional(), prompt: z.string().min(1), instructions: z.string().optional(),
+  answerType: z.enum(["text", "number", "choice", "multiple-choice", "drawing"]),
+  choices: z.array(z.object({ id: z.string(), label: z.string() }).strict()).optional(),
+  correctAnswer: z.string(), explanation: z.string(),
+}).strict();
+
 export const materialDocumentSchema = z.object({
   version: z.literal(1),
-  metadata: z.object({ title: z.string().min(1), grade: z.string().min(1), subject: z.string().min(1), unit: z.string().min(1), objective: z.string().min(1), difficulty: z.enum(["easy", "standard", "challenge"]), description: z.string().optional() }).strict(),
-  presentation: z.object({ mode: z.enum(["safe-composite", "full-image"]), format: z.enum(["simple", "adventure", "comic", "picture-book", "game-card", "worksheet-poster"]), pageSize: z.enum(["screen", "a4-portrait", "a4-landscape"]) }).strict(),
-  pages: z.array(z.object({ id: z.string().min(1), pageNumber: z.number().int().positive(), backgroundAssetId: z.string().optional(), altText: z.string().min(1) }).strict()).min(1),
-  questions: z.array(question).min(1),
+  metadata: z.object({ title: z.string(), grade: z.string(), subject: z.string(), unit: z.string(), objective: z.string(), difficulty: z.enum(["easy", "standard", "challenge"]), description: z.string().optional() }).strict(),
+  presentation: z.object({ format: z.enum(["simple", "visual-guide", "adventure", "comic", "picture-book", "game-card", "worksheet-poster"]), pageSize: z.enum(["screen", "a4-portrait", "a4-landscape"]), visualTheme: z.string(), colorPalette: z.array(z.string()).min(2) }).strict(),
+  pages: z.array(z.object({ id: z.string(), pageNumber: z.number().int().positive(), backgroundAssetId: z.string().optional(), blocks: z.array(materialBlockSchema) }).strict()).min(1),
+  questions: z.array(questionSchema).min(1),
   feedbackPolicy: z.object({ tone: z.enum(["gentle", "standard", "detailed"]), revealAnswer: z.boolean(), allowHints: z.boolean(), maxHints: z.number().int().nonnegative().optional() }).strict(),
-  accessibility: z.object({ highContrast: z.boolean(), largeText: z.boolean(), readingSupport: z.boolean(), imageDescription: z.string().min(1) }).strict(),
-}).strict().superRefine((doc, ctx) => { const pages = new Set(doc.pages.map(p => p.id)); doc.questions.forEach((q, i) => { if (!pages.has(q.pageId)) ctx.addIssue({ code: "custom", path: ["questions", i, "pageId"], message: "存在しないページです" }); if (["choice", "multiple-choice"].includes(q.answerType) && !q.choices?.length) ctx.addIssue({ code: "custom", path: ["questions", i, "choices"], message: "選択肢が必要です" }); }); });
-export const createDraftSchema = z.object({ idempotencyKey: z.string().min(8).max(200), requestSummary: z.string().min(1).max(2000), materialManifest: materialDocumentSchema, source: z.literal("custom-gpt") }).strict();
+  accessibility: z.object({ highContrast: z.boolean(), largeText: z.boolean(), readingSupport: z.boolean(), imageDescription: z.string() }).strict(),
+}).strict();
+
+export const generationInputSchema = z.object({ grade:z.string().min(1), subject:z.string().min(1), unit:z.string().min(1), difficulty:z.enum(["easy","standard","challenge"]), questionCount:z.coerce.number().int().min(1).max(12), format:z.enum(["simple","visual-guide","adventure","comic","picture-book","game-card","worksheet-poster"]), request:z.string().max(2000), avoid:z.string().max(500), textAmount:z.enum(["short","standard","long"]), imageAmount:z.enum(["few","standard","many"]), answerType:z.enum(["text","number","choice","multiple-choice","drawing"]), pageSize:z.enum(["screen","a4-portrait","a4-landscape"]), useCharacter:z.boolean().default(false) }).strict();
+
+export const evaluationSchema = z.object({ verdict:z.enum(["correct","partial","incorrect"]), score:z.number().min(0).max(100), goodPoint:z.string(), improvement:z.string(), hint:z.string(), modelThinking:z.string() }).strict();
+export const characterDesignSchema = z.object({ name:z.string().min(1), colors:z.array(z.string()).min(1), personality:z.string(), motif:z.string(), likes:z.string(), mood:z.string(), visualDescription:z.string(), imageBrief:z.string() }).strict();

@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {z} from "zod";const schema=z.object({assetType:z.enum(["background","scene","character","item","decoration"])}).strict();export async function POST(req:Request){try{schema.parse(await req.json());if(!process.env.OPENAI_API_KEY)return NextResponse.json({error:"OPENAI_API_KEYが必要です。"},{status:503});return NextResponse.json({status:"accepted"})}catch{return NextResponse.json({error:"画像条件が不正です。"},{status:400})}}
+

@@ -1,0 +1,1 @@
+import Link from "next/link"; export function Nav(){return <nav className="appnav"><Link className="brand" href="/">ガクガク教材Hub <small>Local</small></Link><div><Link href="/create">教材作成</Link><Link href="/materials">教材</Link><Link href="/history">履歴</Link><Link href="/characters">キャラクター</Link><Link href="/settings">設定</Link></div></nav>}
