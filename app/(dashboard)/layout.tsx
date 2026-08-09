@@ -1,1 +1,0 @@
-import Link from "next/link";import { logout } from "@/features/auth/actions";export default function Layout({children}:{children:React.ReactNode}){return <><nav className="appnav"><Link href="/"><strong>ガクガク教材Hub</strong></Link><form action={logout}><button className="button secondary">ログアウト</button></form></nav>{children}</>}
