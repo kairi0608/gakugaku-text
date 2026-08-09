@@ -18,6 +18,8 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      "gakugaku-material-hub/**",
+      "gakugaku-material-hub-fixed/**",
     ],
   },
 ];

@@ -1,2 +1,4 @@
-import Link from "next/link";import {listMaterials} from "@/lib/materials";export const dynamic="force-dynamic";export default function Page(){const ms=listMaterials();return <main className="shell"><header className="page-head"><div><span className="eyebrow">ライブラリ</span><h1>教材</h1></div><Link className="button" href="/create">＋ 新しい教材</Link></header><div className="grid">{ms.map(m=><Link className="card" href={`/materials/${m.id}`} key={m.id}><span className="pill">{m.status}</span><h2>{m.title}</h2><p>{new Date(m.updatedAt).toLocaleString("ja-JP")}</p></Link>)}{!ms.length&&<div className="empty">教材はまだありません。</div>}</div></main>}
-
+import Link from "next/link";
+import { listMaterials } from "@/lib/materials";
+export const dynamic = "force-dynamic";
+export default async function Page() { const materials = await listMaterials(); return <main className="shell"><header className="page-head"><div><span className="eyebrow">ライブラリ</span><h1>教材</h1></div><Link className="button" href="/create">新しい教材</Link></header><div className="grid">{materials.map(m => <Link className="card" href={`/materials/${m.id}`} key={m.id}><span className="pill">{m.status}</span><h2>{m.title}</h2><p>{new Date(m.updatedAt).toLocaleString("ja-JP")}</p></Link>)}{!materials.length && <div className="empty">教材はまだありません。</div>}</div></main>; }

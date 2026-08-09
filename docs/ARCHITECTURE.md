@@ -1,4 +1,3 @@
-# Architecture
+# アーキテクチャ
 
-Next.js App RouterのRoute HandlerだけがAI、SQLite、ローカルファイルへアクセスします。React画面は構造化されたMaterialDocumentを共通レンダラーで画面・印刷へ描画します。秘密値はサーバー側だけで参照します。
-
+Next.js App RouterのServer ComponentとRoute Handlerだけが`lib/supabase/admin.ts`を通じてSupabaseへ接続します。service role keyはサーバー専用です。ブラウザは教材生成・回答APIを呼びますが、DBキーを受け取りません。教材内容は不変の`hub_material_versions`へ保存され、教材は現在版IDを参照します。

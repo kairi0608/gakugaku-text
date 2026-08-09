@@ -1,7 +1,8 @@
 # Supabaseセットアップ
 
-1. 新規プロジェクトを作成し、`001_initial_schema.sql`を適用します。
-2. AuthのSite URLを本番URL、Redirect URLsへ`/auth/callback`と`/auth/reset-password`を追加します。
-3. migrationが作成する`material-assets`と`submission-assets`がprivateであることを確認します。
-4. 最初の管理者・教師はSQL Editorでservice role相当の管理操作として`profiles.role`を更新します。一般画面からは付与しません。
-5. Project URL、anon key、service role keyを環境変数へ設定します。
+1. Supabaseで新しいプロジェクトを作成します。
+2. SQL Editorを開き、`supabase/migrations/002_hub_cloud_schema.sql`の全文を実行します。
+3. Project URL、anon key、service role keyを取得します。
+4. ローカルとVercelへ環境変数を登録します。
+
+`hub_`接頭辞の全テーブルでRLSが有効です。anon/authenticatedには直接権限を与えず、現段階ではサーバー専用クライアントだけがアクセスします。service role keyをGitHubへ保存したり、`NEXT_PUBLIC_`付きの変数へ入れたりしないでください。

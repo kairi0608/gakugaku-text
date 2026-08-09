@@ -1,29 +1,31 @@
-# ガクガク教材Hub Local
+# ガクガク教材Hub
 
-ローカルPCだけで動く、AI教材生成・学習・採点・成長記録アプリです。教材、回答、キャラクターは `data/` に保存され、外部DB・認証・クラウド配備は不要です。
+AI教材の作成、学習、採点、履歴、学習パートナーを管理するNext.jsアプリです。本番データはSupabase PostgreSQLへ保存し、Vercelの一時ファイル領域には依存しません。
 
-## 必要環境
+## セットアップ
 
-- Node.js 22以上
-- pnpm 11以上
+1. `pnpm install --frozen-lockfile`
+2. `.env.example`を`.env.local`へコピーしてSupabase情報を設定
+3. Supabase SQL Editorで`supabase/migrations/002_hub_cloud_schema.sql`を実行
+4. `pnpm dev`
 
-## 起動
+## 必須環境変数
 
-```bash
-pnpm install
-Copy-Item .env.example .env.local
-pnpm db:migrate
-pnpm dev
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-ブラウザで `http://localhost:3000` を開きます。AI機能には `.env.local` の `OPENAI_API_KEY`、`OPENAI_TEXT_MODEL`、`OPENAI_IMAGE_MODEL` を設定します。キーがなくても画面・ローカル教材・学習・採点・履歴・印刷は動き、AIを偽装した表示はしません。
+`SUPABASE_SERVICE_ROLE_KEY`はサーバー専用で、ブラウザへ公開しません。OpenAI機能を使う場合だけ`OPENAI_API_KEY`、`OPENAI_TEXT_MODEL`、`OPENAI_IMAGE_MODEL`も設定します。
 
-## データとバックアップ
+## 品質確認
 
-- DB: `data/hub.sqlite`
-- 教材画像: `data/uploads/materials/`
-- キャラクター画像: `data/uploads/characters/`
-- 回答画像: `data/uploads/answers/`
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm build
+```
 
-設定画面からZIPを書き出せます。復元は既存データを自動上書きしません。
-
+VercelではRoot Directoryを`.`、Install Commandを`pnpm install --frozen-lockfile`、Build Commandを`pnpm build`に設定します。

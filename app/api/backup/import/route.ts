@@ -1,1 +1,2 @@
-import {NextResponse} from "next/server";export async function POST(req:Request){const type=req.headers.get("content-type")??"";if(!type.includes("multipart/form-data"))return NextResponse.json({error:"ZIPファイルを選択してください。"},{status:400});return NextResponse.json({requiresConfirmation:true,message:"内容を確認後に明示的な復元操作が必要です。既存データは自動上書きされません。"})}
+import { NextResponse } from "next/server";
+export async function POST() { return NextResponse.json({ error: "Supabase版のインポートは管理者操作として今後実装します。" }, { status: 501 }); }
