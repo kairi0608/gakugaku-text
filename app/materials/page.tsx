@@ -3,20 +3,25 @@ import Link from "next/link";
 import { EmptyState } from "@/components/design-system/EmptyState";
 import { PageHeader } from "@/components/design-system/PageHeader";
 import { StatusBadge } from "@/components/design-system/StatusBadge";
+import { parseExperienceRole, withExperienceRole } from "@/config/navigation";
 import { listMaterials } from "@/lib/materials";
 
 export const dynamic = "force-dynamic";
 
 const statusLabels: Record<string, string> = { draft: "下書き", ready: "学習可能", published: "公開済み" };
 
-export default async function MaterialsPage() {
+export default async function MaterialsPage({ searchParams }: { searchParams: Promise<{ from?: string | string[] }> }) {
+  const role = parseExperienceRole((await searchParams).from) ?? "personal";
   let loadError = false;
   const materials = await listMaterials().catch(() => { loadError = true; return []; });
+  const title = role === "teacher" ? "教材管理" : role === "student" ? "課題・自主学習" : "教材一覧";
+  const description = role === "teacher" ? "作成した教材の内容と状態を確認できます。" : "取り組む教材を選んで、学習を始められます。";
+  const createLabel = role === "student" ? "自分で練習を作る" : "新しい教材";
   return (
     <main className="shell">
-      <PageHeader eyebrow="学習" title="教材一覧" description="作成した教材を選んで、内容の確認や学習を始められます。" action={<Link className="button" href="/create"><Plus aria-hidden="true" size={18} />新しい教材</Link>} />
+      <PageHeader eyebrow={role === "teacher" ? "教師ページ" : role === "student" ? "生徒ページ" : "個人ページ"} title={title} description={description} action={<Link className="button" href={withExperienceRole("/create", role)}><Plus aria-hidden="true" size={18} />{createLabel}</Link>} />
       {loadError && <p className="notice error">教材を読み込めませんでした。設定画面でSupabaseの接続情報を確認してください。</p>}
-      {materials.length ? <div className="material-list">{materials.map(material => <Link className="material-row" href={`/materials/${material.id}`} key={material.id}><span className="material-icon"><BookOpen aria-hidden="true" size={20} /></span><div><h2>{material.title}</h2><p>更新: {new Date(material.updatedAt).toLocaleString("ja-JP")}</p></div><StatusBadge tone={material.status === "ready" ? "success" : "default"}>{statusLabels[material.status] ?? material.status}</StatusBadge><span className="row-date">内容を見る</span></Link>)}</div> : !loadError && <EmptyState title="教材がまだありません" description="学年・教科・単元を選んで、最初の教材を作りましょう。" action={<Link className="button" href="/create">教材を作る</Link>} />}
+      {materials.length ? <div className="material-list">{materials.map(material => <Link className="material-row" href={withExperienceRole(`/materials/${material.id}`, role)} key={material.id}><span className="material-icon"><BookOpen aria-hidden="true" size={20} /></span><div><h2>{material.title}</h2><p>更新: {new Date(material.updatedAt).toLocaleString("ja-JP")}</p></div><StatusBadge tone={material.status === "ready" ? "success" : "default"}>{statusLabels[material.status] ?? material.status}</StatusBadge><span className="row-date">内容を見る</span></Link>)}</div> : !loadError && <EmptyState title="教材がまだありません" description="学年・教科・単元を選んで、最初の教材を作りましょう。" action={<Link className="button" href={withExperienceRole("/create", role)}>教材を作る</Link>} />}
     </main>
   );
 }

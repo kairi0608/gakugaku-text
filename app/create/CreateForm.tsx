@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AppCard } from "@/components/design-system/AppCard";
 import { MaterialGenerationProgress } from "@/components/materials/MaterialGenerationProgress";
+import { withExperienceRole, type ExperienceRole } from "@/config/navigation";
 
 const selects = {
   difficulty: [["easy", "やさしい"], ["standard", "標準"], ["challenge", "チャレンジ"]],
@@ -15,7 +16,7 @@ const selects = {
   pageSize: [["screen", "画面"], ["a4-portrait", "A4縦"], ["a4-landscape", "A4横"]],
 } as const;
 
-export function CreateForm() {
+export function CreateForm({ role }: { role: ExperienceRole }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -33,7 +34,9 @@ export function CreateForm() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "教材を作成できませんでした");
       setStep(6);
-      router.push(`/materials/${result.id}`);
+      if (role === "teacher") router.push("/teacher");
+      else if (role === "student") router.push(withExperienceRole(`/learn/${result.id}`, role));
+      else router.push(withExperienceRole(`/materials/${result.id}`, role));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "教材を作成できませんでした");
       setBusy(false);
@@ -82,7 +85,7 @@ export function CreateForm() {
         </AppCard>
       </div>
       {error && <p className="notice error" role="alert">{error}</p>}
-      <div className="create-action"><p>入力内容は教材生成と保存のために使用されます。</p><button className="button" type="submit"><Sparkles aria-hidden="true" size={18} />教材を一括生成</button></div>
+      <div className="create-action"><p>入力内容は教材生成と保存のために使用されます。</p><button className="button" type="submit"><Sparkles aria-hidden="true" size={18} />{role === "student" ? "練習問題を作る" : "教材を一括生成"}</button></div>
     </form>
   );
 }

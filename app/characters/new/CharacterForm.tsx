@@ -4,6 +4,7 @@ import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AppCard } from "@/components/design-system/AppCard";
+import { withExperienceRole, type ExperienceRole } from "@/config/navigation";
 
 const fields = [
   ["name", "名前", "ミント"],
@@ -14,7 +15,7 @@ const fields = [
   ["mood", "雰囲気", "まるくて親しみやすい"],
 ] as const;
 
-export function CharacterForm() {
+export function CharacterForm({ role }: { role: ExperienceRole }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -26,7 +27,7 @@ export function CharacterForm() {
       const response = await fetch("/api/characters/design", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "キャラクターを作成できませんでした");
-      router.push("/characters");
+      router.push(withExperienceRole("/characters", role));
       router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "キャラクターを作成できませんでした");

@@ -2,6 +2,8 @@
 
 AI教材の作成、学習、採点、履歴、学習パートナーを管理するNext.jsアプリです。本番データはSupabase PostgreSQLへ保存し、Vercelの一時ファイル領域には依存しません。
 
+入口の`/`から個人・生徒・教師の利用ページを選択できます。`/personal`、`/student`、`/teacher`は現段階ではUI上の利用モードであり、認証済みroleではありません。Auth・RLS移行計画は`docs/ROLE_AUTH_MIGRATION.md`を参照してください。
+
 ## セットアップ
 
 1. `pnpm install --frozen-lockfile`

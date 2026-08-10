@@ -3,11 +3,12 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { AppCard } from "@/components/design-system/AppCard";
+import { withExperienceRole, type ExperienceRole } from "@/config/navigation";
 import type { MaterialDocument } from "@/features/materials/shared/types";
 
 type Result = { score: number; feedback: string };
 
-export function LearnForm({ materialId, document: materialDocument }: { materialId: string; document: MaterialDocument }) {
+export function LearnForm({ materialId, document: materialDocument, role }: { materialId: string; document: MaterialDocument; role: ExperienceRole }) {
   const [current, setCurrent] = useState(0);
   const [learnerName, setLearnerName] = useState("ゲスト");
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -49,7 +50,11 @@ export function LearnForm({ materialId, document: materialDocument }: { material
     setError("");
   }
 
-  if (done) return <AppCard className="learn-result"><CheckCircle2 aria-hidden="true" size={36} color="var(--success)" /><p className="eyebrow">学習完了</p><div className="score">{done.score}点</div><p>{done.feedback}</p><div className="actions"><a className="button" href="/history">学習履歴を見る</a><button className="button outline" type="button" onClick={retry}><RotateCcw aria-hidden="true" size={17} />もう一度学ぶ</button></div></AppCard>;
+  if (done) {
+    const dashboardHref = `/${role}`;
+    const dashboardLabel = role === "student" ? "生徒ホームへ" : role === "teacher" ? "教師ホームへ" : "個人ホームへ";
+    return <AppCard className="learn-result"><CheckCircle2 aria-hidden="true" size={36} color="var(--success)" /><p className="eyebrow">学習完了</p><div className="score">{done.score}点</div><p>{done.feedback}</p><div className="actions"><a className="button" href={dashboardHref}>{dashboardLabel}</a>{role !== "teacher" && <a className="button secondary" href={withExperienceRole("/history", role)}>学習履歴を見る</a>}<button className="button outline" type="button" onClick={retry}><RotateCcw aria-hidden="true" size={17} />もう一度学ぶ</button></div></AppCard>;
+  }
 
   return (
     <section aria-label="問題への回答">
