@@ -40,8 +40,7 @@
     "next-env.d.ts",
     "scripts/**/*.ts",
     "tests/**/*.ts",
-    "tests/**/*.tsx",
-    ".next-production/types/**/*.ts"
+    "tests/**/*.tsx"
   ],
   "exclude": [
     "node_modules",

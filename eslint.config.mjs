@@ -15,11 +15,13 @@ const eslintConfig = [
     ignores: [
       "node_modules/**",
       ".next/**",
+      ".next-production/**",
       "out/**",
       "build/**",
       "next-env.d.ts",
       "gakugaku-material-hub/**",
       "gakugaku-material-hub-fixed/**",
+      "gakugaku-ai-system-production-ready/**",
     ],
   },
 ];
