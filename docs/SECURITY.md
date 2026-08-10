@@ -1,7 +1,7 @@
 # セキュリティ
 
-- 新規登録で選べるロールは `personal` と `student` のみ。
-- `teacher` / `admin` は管理者専用APIとService Roleでのみ設定。
+- 新規登録で選べるロールは `personal`、`student`、`teacher` のみ。
+- `admin` は公開登録のschemaとDB Triggerの許可リストから除外し、管理者専用APIまたは信頼できる初回SQLだけで設定。
 - Middleware、ページ/API guard、Postgres RLSの三層で認可。
 - 通常ユーザーCRUDはセッション付きSupabase clientを使用。
 - OpenAIキーとService Roleはサーバー専用で、画面・レスポンス・クライアントbundleへ含めない。

@@ -24,10 +24,10 @@ OPENAI_IMAGE_MODEL=gpt-image-1.5
 
 ## 初回デプロイ前
 
-1. Supabase SQL Editor で `002_hub_cloud_schema.sql`、`003_auth_roles_and_customization.sql` の順に適用します。
+1. Supabase SQL Editor で `002_hub_cloud_schema.sql`、`003_auth_roles_and_customization.sql`、`004_auth_signup_roles_and_email_support.sql` の順に適用します。
 2. Supabase Auth の Site URL を本番URLにします。
 3. Redirect URLs に `https://実際のVercelドメイン/auth/callback` を登録します。
 4. Storage の `gakugaku-assets` が private であることを確認します。
-5. 最初の管理者は、対象ユーザー作成後に SQL Editor で `hub_profiles.role = 'admin'` を設定します。通常の登録画面から管理者・教師は作成できません。
+5. 最初の管理者は、対象ユーザー作成後に SQL Editor で `profiles.role = 'admin'` を設定します。通常の登録画面から管理者は作成できません。教師は登録できます。
 
 詳細は [AUTH_SETUP.md](./AUTH_SETUP.md)、[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)、[AI_GENERATION.md](./AI_GENERATION.md) を参照してください。

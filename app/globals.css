@@ -413,6 +413,15 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .auth-actions { display: flex; justify-content: flex-end; font-size: .9rem; }
 .auth-submit { width: 100%; justify-content: center; min-height: 46px; }
 .auth-card-footer { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); }
+.signup-role-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.signup-role-fieldset legend { margin-bottom: 8px; font-weight: 700; }
+.signup-role-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.signup-role-option { display: flex; min-width: 0; gap: 8px; align-items: flex-start; padding: 12px 10px; border: 1px solid var(--border); border-radius: 12px; background: #fff; cursor: pointer; }
+.signup-role-option.selected { border-color: var(--primary); background: #eff6ff; box-shadow: 0 0 0 2px rgba(37,99,235,.1); }
+.signup-role-option input { margin-top: 3px; accent-color: var(--primary); }
+.signup-role-option span { display: grid; min-width: 0; gap: 4px; }
+.signup-role-option small { color: var(--text-muted); line-height: 1.45; }
+.auth-check-list { margin: 0 0 20px; padding-left: 20px; color: var(--text-muted); line-height: 1.8; }
 
 .landing-page { padding-block: clamp(28px, 6vw, 72px); }
 .landing-hero { display: grid; grid-template-columns: minmax(0,1.2fr) minmax(280px,.8fr); gap: clamp(24px, 6vw, 72px); align-items: center; }
@@ -421,8 +430,10 @@ html, body { max-width: 100%; overflow-x: hidden; }
 .hero-visual { min-height: 300px; padding: 40px; display: grid; place-content: center; gap: 16px; text-align: center; border: 1px solid #dbe7ff; border-radius: 24px; background: linear-gradient(145deg,#fff,#edf5ff); box-shadow: 0 22px 56px rgba(37,99,235,.11); }
 .hero-mark { width: 86px; height: 86px; margin-inline: auto; }
 .hero-visual strong { font-size: 1.4rem; }
-.landing-roles { margin-top: 56px; }
-.landing-roles .role-select-card { cursor: default; }
+.landing-roles { grid-template-columns: repeat(2,minmax(0,1fr)); margin-top: 56px; }
+.landing-roles .role-select-card { display: flex; flex-direction: column; align-items: flex-start; cursor: default; }
+.landing-roles .role-select-card p { flex: 1; }
+.landing-roles .role-select-card .button { margin-top: 14px; }
 
 .topbar-logout { min-height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: #fff; color: var(--text-muted); cursor: pointer; }
 .topbar-logout:hover { border-color: var(--primary); color: var(--primary); }
@@ -495,6 +506,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .landing-page { padding-inline: 14px; }
   .topbar-caption { display: none; }
   .topbar-logout { padding-inline: 8px; font-size: .75rem; }
+  .landing-roles, .signup-role-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 360px) {
   .auth-page { padding-inline: 8px; }
