@@ -1,33 +1,59 @@
 # ガクガクAIシステム
 
-AI教材の作成、学習、採点、履歴、学習パートナーを管理するNext.jsアプリです。本番データはSupabase PostgreSQLへ保存し、Vercelの一時ファイル領域には依存しません。
+AI教材生成、学習・採点、AIフィードバック、キャラクター成長、背景カスタマイズ、教師・生徒のクラス課題を統合したNext.js / Supabaseアプリです。
 
-入口の`/`から個人・生徒・教師の利用ページを選択できます。`/personal`、`/student`、`/teacher`は現段階ではUI上の利用モードであり、認証済みroleではありません。Auth・RLS移行計画は`docs/ROLE_AUTH_MIGRATION.md`を参照してください。
+## 技術構成
 
-## セットアップ
+- Next.js 15 App Router / React 19 / TypeScript
+- Supabase Auth、Postgres RLS、Private Storage
+- OpenAI Responses API structured output / Images API
+- Zod、sharp、Vitest、ESLint
 
-1. `pnpm install --frozen-lockfile`
-2. `.env.example`を`.env.local`へコピーしてSupabase情報を設定
-3. Supabase SQL Editorで`supabase/migrations/002_hub_cloud_schema.sql`を実行
-4. `pnpm dev`
+## ローカル起動
+
+```bash
+pnpm install --frozen-lockfile
+copy .env.example .env.local
+pnpm dev
+```
+
+環境変数を設定し、Supabaseへ `002_hub_cloud_schema.sql`、続いて `003_auth_roles_and_customization.sql` を適用してください。詳しくは [AUTH_SETUP](docs/AUTH_SETUP.md) と [SUPABASE_SETUP](docs/SUPABASE_SETUP.md) を参照してください。
 
 ## 必須環境変数
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://PROJECT.supabase.co
+```text
+NEXT_PUBLIC_APP_URL=
+NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+OPENAI_API_KEY=
+OPENAI_TEXT_MODEL=
+OPENAI_IMAGE_MODEL=
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY`はサーバー専用で、ブラウザへ公開しません。OpenAI機能を使う場合だけ`OPENAI_API_KEY`、`OPENAI_TEXT_MODEL`、`OPENAI_IMAGE_MODEL`も設定します。
+Service RoleとOpenAIキーはサーバー専用です。クライアントへ公開しません。
 
-## 品質確認
+## 品質ゲート
 
 ```bash
-pnpm typecheck
+pnpm install --frozen-lockfile
+pnpm exec tsc --noEmit --pretty false
 pnpm lint
 pnpm test
 pnpm build
 ```
 
-VercelではRoot Directoryを`.`、Install Commandを`pnpm install --frozen-lockfile`、Build Commandを`pnpm build`に設定します。
+## ドキュメント
+
+- [認証セットアップ](docs/AUTH_SETUP.md)
+- [ロールモデル](docs/ROLE_MODEL.md)
+- [RLSと所有権](docs/RLS.md)
+- [AI生成](docs/AI_GENERATION.md)
+- [キャラクター成長](docs/CHARACTER_GROWTH.md)
+- [背景カスタマイズ](docs/BACKGROUND_CUSTOMIZATION.md)
+- [教師・生徒フロー](docs/TEACHER_STUDENT_FLOW.md)
+- [Vercel設定](docs/VERCEL_SETUP.md)
+
+## デプロイ前確認
+
+Vercelの環境変数、SupabaseのSite URL / Redirect URL、003 migration、最初の管理者ロールを確認します。実サービスを使うE2E（登録メール、AI生成、Private Storage、RLSの複数ユーザー分離）は、Productionとは別の検証Supabase/OpenAI環境で実施してから公開してください。
