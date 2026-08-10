@@ -3,11 +3,11 @@ import { mobileNavigationByRole, navigationByRole, parseExperienceRole, withExpe
 import { defaultStudentStage, studentExperience } from "../config/student-experience";
 
 describe("experience role navigation", () => {
-  it("accepts only the three UI experience roles", () => {
+  it("accepts only the four authenticated roles", () => {
     expect(parseExperienceRole("personal")).toBe("personal");
     expect(parseExperienceRole("student")).toBe("student");
     expect(parseExperienceRole("teacher")).toBe("teacher");
-    expect(parseExperienceRole("admin")).toBeNull();
+    expect(parseExperienceRole("admin")).toBe("admin");
     expect(parseExperienceRole("https://example.com")).toBeNull();
   });
 
@@ -20,9 +20,9 @@ describe("experience role navigation", () => {
     for (const items of Object.values(mobileNavigationByRole)) expect(items.length).toBeLessThanOrEqual(5);
   });
 
-  it("does not expose unimplemented teacher destinations", () => {
+  it("exposes the complete teacher workflow", () => {
     const labels = navigationByRole.teacher.map(item => item.label);
-    expect(labels).toEqual(["ホーム", "教材作成", "教材管理", "設定"]);
+    expect(labels).toEqual(["ホーム", "教材作成", "教材管理", "クラス", "課題", "提出", "設定"]);
   });
 });
 

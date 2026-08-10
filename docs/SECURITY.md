@@ -1,3 +1,13 @@
 # セキュリティ
 
-新規roleは常にpersonalです。teacher/adminはDB管理操作だけで付与し、profile triggerが自己変更を拒否します。全publicテーブルでRLSを有効化し、owner・所属クラス・担当教師・本人提出に限定します。Action API key、service role、claim secretはサーバー専用です。claim tokenは256bit乱数で、secret付きSHA-256だけをDBに保存し、24時間・一度限りのRPCで処理します。Storage bucketは非公開で、PNG/JPEG/WebP、15MB以下に制限します。アプリ側アップロード処理ではdecode、512〜8192px検査、再エンコード、メタデータ除去を行う前提です。
+- 新規登録で選べるロールは `personal` と `student` のみ。
+- `teacher` / `admin` は管理者専用APIとService Roleでのみ設定。
+- Middleware、ページ/API guard、Postgres RLSの三層で認可。
+- 通常ユーザーCRUDはセッション付きSupabase clientを使用。
+- OpenAIキーとService Roleはサーバー専用で、画面・レスポンス・クライアントbundleへ含めない。
+- Private Storageは `users/<auth.uid()>/...` の所有パスだけを許可。
+- 画像UploadはPNG/JPEG/WebP、10MB以下、decode・寸法検査後にWebP再エンコード。
+- EXPは完了済みAttemptからサーバー計算し、dedupe keyで二重付与を防止。
+- AIキー不足時は503。偽データやサンプルへの切替なし。
+
+`tests/security.test.ts` がmigrationの非破壊性、所有者ポリシー、ロール制限、Private bucket、クライアント秘密値参照を検査します。
