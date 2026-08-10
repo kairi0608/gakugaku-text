@@ -1,2 +1,12 @@
-import {CreateForm} from "./CreateForm";export default function Page(){return <main className="shell"><header className="page-head"><div><span className="eyebrow">AI教材スタジオ</span><h1>学びを、物語にしよう。</h1><p>条件を入れてボタンを押すだけ。問題・正答・解説・レイアウトをまとめて保存します。</p></div></header>{!process.env.OPENAI_API_KEY&&<p className="notice">OPENAI_API_KEYが未設定です。今は安全なローカル教材生成で動作します。AI画像・AI文章生成を使うには設定画面をご確認ください。</p>}<CreateForm/></main>}
+import { PageHeader } from "@/components/design-system/PageHeader";
+import { CreateForm } from "./CreateForm";
 
+export default function CreatePage() {
+  return (
+    <main className="shell">
+      <PageHeader eyebrow="教材作成" title="新しい教材を作る" description="学ぶ内容と見せ方を選ぶと、問題・正答・解説をひとつの教材として保存します。" />
+      {!process.env.OPENAI_API_KEY && <p className="notice">AI生成キーが未設定のため、現在は安全な標準教材生成で動作します。</p>}
+      <CreateForm />
+    </main>
+  );
+}

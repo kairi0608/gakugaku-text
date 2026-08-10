@@ -1,3 +1,20 @@
+import { Save } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
+import { AppCard } from "@/components/design-system/AppCard";
+import { PageHeader } from "@/components/design-system/PageHeader";
 import { getMaterial, saveMaterial } from "@/lib/materials";
-export default async function Page({ params }: { params: Promise<{ id: string }> }) { const { id } = await params, material = await getMaterial(id); if (!material) notFound(); async function update(form: FormData) { "use server"; const current = await getMaterial(id); if (!current) return; const doc = { ...current.document, metadata: { ...current.document.metadata, title: String(form.get("title")), objective: String(form.get("objective")) } }; await saveMaterial(doc, id); redirect(`/materials/${id}`); } return <main className="shell"><header className="page-head"><div><span className="eyebrow">新しいバージョンとして保存</span><h1>教材を編集</h1></div></header><form action={update} className="card"><label className="field"><span>タイトル</span><input name="title" defaultValue={material.title}/></label><label className="field"><span>学習目標</span><textarea name="objective" defaultValue={material.document.metadata.objective}/></label><button className="button">変更を保存</button></form></main>; }
+
+export default async function EditMaterialPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const material = await getMaterial(id);
+  if (!material) notFound();
+  async function update(form: FormData) {
+    "use server";
+    const current = await getMaterial(id);
+    if (!current) return;
+    const document = { ...current.document, metadata: { ...current.document.metadata, title: String(form.get("title")), objective: String(form.get("objective")) } };
+    await saveMaterial(document, id);
+    redirect(`/materials/${id}`);
+  }
+  return <main className="shell"><PageHeader eyebrow="教材編集" title="教材の基本情報を編集" description="変更内容は新しいバージョンとして保存されます。" /><AppCard as="form" action={update} className="form-section"><label className="field"><span>タイトル</span><input name="title" defaultValue={material.title} required /></label><label className="field"><span>学習目標</span><textarea name="objective" defaultValue={material.document.metadata.objective} required /></label><button className="button" type="submit"><Save aria-hidden="true" size={17} />変更を保存</button></AppCard></main>;
+}

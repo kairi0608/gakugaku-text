@@ -1,5 +1,5 @@
 openapi: 3.1.0
-info: {title: ガクガク教材Hub Actions, version: 1.0.0, description: 教材下書きの作成・取得・修正専用API}
+info: {title: ガクガクAIシステム Actions, version: 1.0.0, description: 教材下書きの作成・取得・修正専用API}
 servers: [{url: "https://YOUR_DOMAIN.example"}]
 security: [{bearerAuth: []}]
 paths:

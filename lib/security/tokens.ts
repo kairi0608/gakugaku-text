@@ -1,4 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+
 export function createClaimToken() { return randomBytes(32).toString("base64url"); }
 export function hashClaimToken(token: string, secret = process.env.CLAIM_TOKEN_SECRET ?? "test-only-secret") { return createHash("sha256").update(`${secret}:${token}`).digest("hex"); }
 export function tokenMatches(token: string, expected: string, secret?: string) { const actual = hashClaimToken(token, secret); return actual.length === expected.length && timingSafeEqual(Buffer.from(actual), Buffer.from(expected)); }

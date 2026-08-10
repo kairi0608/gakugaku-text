@@ -1,5 +1,13 @@
 import { notFound } from "next/navigation";
+import { PageHeader } from "@/components/design-system/PageHeader";
 import { getMaterial } from "@/lib/materials";
 import { LearnForm } from "./LearnForm";
+
 export const dynamic = "force-dynamic";
-export default async function Page({ params }: { params: Promise<{ id: string }> }) { const { id } = await params, material = await getMaterial(id); if (!material) notFound(); return <main className="shell"><header className="page-head"><div><span className="eyebrow">学習モード</span><h1>{material.title}</h1><p>全{material.document.questions.length}問。自分のペースで進めましょう。</p></div></header><LearnForm materialId={id} document={material.document}/></main>; }
+
+export default async function LearnPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const material = await getMaterial(id);
+  if (!material) notFound();
+  return <main className="shell learn-shell"><PageHeader eyebrow="学習" title={material.title} description={`全${material.document.questions.length}問。1問ずつ、自分のペースで進めましょう。`} /><LearnForm materialId={id} document={material.document} /></main>;
+}

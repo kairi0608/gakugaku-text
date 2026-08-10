@@ -1,7 +1,22 @@
+import { Edit3, Play } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getMaterial } from "@/lib/materials";
-import { MaterialRenderer } from "@/components/materials/MaterialRenderer";
+import { PageHeader } from "@/components/design-system/PageHeader";
 import { MaterialPrintView } from "@/components/materials/MaterialPrintView";
+import { MaterialRenderer } from "@/components/materials/MaterialRenderer";
+import { getMaterial } from "@/lib/materials";
+
 export const dynamic = "force-dynamic";
-export default async function Page({ params }: { params: Promise<{ id: string }> }) { const { id } = await params, material = await getMaterial(id); if (!material) notFound(); return <main className="shell"><header className="page-head no-print"><div><span className="eyebrow">バージョン {material.version.versionNumber}</span><h1>{material.title}</h1><p>{material.document.metadata.grade}・{material.document.metadata.subject}・{material.document.metadata.unit}</p></div><div className="actions"><Link className="button" href={`/learn/${material.id}`}>この教材で学ぶ</Link><Link className="button secondary" href={`/materials/${material.id}/edit`}>編集</Link></div></header><MaterialRenderer document={material.document}/><MaterialPrintView document={material.document}/></main>; }
+
+export default async function MaterialPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const material = await getMaterial(id);
+  if (!material) notFound();
+  return (
+    <main className="shell detail-layout">
+      <div className="no-print"><PageHeader eyebrow={`教材バージョン ${material.version.versionNumber}`} title={material.title} description={`${material.document.metadata.grade}・${material.document.metadata.subject}・${material.document.metadata.unit}`} action={<div className="actions mobile-stack"><Link className="button" href={`/learn/${material.id}`}><Play aria-hidden="true" size={17} />学習を始める</Link><Link className="button outline" href={`/materials/${material.id}/edit`}><Edit3 aria-hidden="true" size={17} />編集</Link></div>} /></div>
+      <MaterialRenderer document={material.document} />
+      <MaterialPrintView document={material.document} />
+    </main>
+  );
+}
