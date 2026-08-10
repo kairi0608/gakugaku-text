@@ -6,11 +6,13 @@ import { SectionHeader } from "@/components/design-system/SectionHeader";
 import { StatusBadge } from "@/components/design-system/StatusBadge";
 import { withExperienceRole } from "@/config/navigation";
 import { getAttemptHistory, listCharacters, listMaterials } from "@/lib/materials";
+import { requireRole } from "@/lib/auth/require-role";
 
 export const dynamic = "force-dynamic";
 const stageLabels: Record<string, string> = { egg: "タマゴ", child: "こども", "learning-partner": "学習パートナー" };
 
 export default async function PersonalDashboard() {
+  await requireRole("personal");
   let dataIssue = false;
   const [materials, attempts, characters] = await Promise.all([
     listMaterials().catch(() => { dataIssue = true; return []; }),

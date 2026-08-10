@@ -7,10 +7,12 @@ import { SectionHeader } from "@/components/design-system/SectionHeader";
 import { StatusBadge } from "@/components/design-system/StatusBadge";
 import { withExperienceRole } from "@/config/navigation";
 import { listMaterials } from "@/lib/materials";
+import { requireRole } from "@/lib/auth/require-role";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeacherDashboard() {
+  await requireRole("teacher");
   let loadError = false;
   const materials = await listMaterials().catch(() => { loadError = true; return []; });
   const recentMaterials = materials.slice(0, 4);

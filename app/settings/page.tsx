@@ -1,26 +1,19 @@
-import { Bot, ChevronRight, CircleHelp, Scale } from "lucide-react";
+/* eslint-disable jsx-a11y/alt-text */
+import { Bot, ChevronRight, CircleHelp, Image, Scale, UserRound } from "lucide-react";
 import Link from "next/link";
 import { AppCard } from "@/components/design-system/AppCard";
 import { PageHeader } from "@/components/design-system/PageHeader";
 import { StatusBadge } from "@/components/design-system/StatusBadge";
-import { experienceRoleDescriptions, experienceRoleLabels, parseExperienceRole } from "@/config/navigation";
+import { experienceRoleDescriptions, experienceRoleLabels } from "@/config/navigation";
+import { requireAnyRole } from "@/lib/auth/require-role";
 import packageJson from "@/package.json";
 import { BackupPanel } from "./BackupPanel";
 
-export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ from?: string | string[] }> }) {
-  const role = parseExperienceRole((await searchParams).from) ?? "personal";
-  const supabaseReady = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
-  const aiReady = Boolean(process.env.OPENAI_API_KEY);
-  return (
-    <main className="shell">
-      <PageHeader eyebrow="環境とデータ" title="設定" description="AI連携、保存先、バックアップ、アプリ情報を確認できます。" />
-      <div className="settings-stack">
-        <AppCard className="settings-section"><h2>利用ページ</h2><div className="setting-row"><div><strong>{experienceRoleLabels[role]}</strong><span className="row-meta">{experienceRoleDescriptions[role]}</span></div><StatusBadge>{experienceRoleLabels[role]}モード</StatusBadge></div><p className="caption">これは画面と導線を切り替える利用モードです。本人確認やアクセス権限を保証するセキュリティroleではありません。</p></AppCard>
-        <AppCard className="settings-section"><h2><Bot aria-hidden="true" size={19} />AI設定</h2><p className="muted">秘密の値そのものは表示しません。Vercelの環境変数で管理してください。</p><div className="setting-row"><div><strong>OpenAI</strong><span className="row-meta">教材・画像生成に使用</span></div><StatusBadge tone={aiReady ? "success" : "warning"}>{aiReady ? "設定済み" : "未設定"}</StatusBadge></div><div className="setting-row"><div><strong>Supabase</strong><span className="row-meta">教材と学習データの保存に使用</span></div><StatusBadge tone={supabaseReady ? "success" : "danger"}>{supabaseReady ? "接続情報あり" : "未設定"}</StatusBadge></div></AppCard>
-        <BackupPanel />
-        <AppCard className="settings-section"><h2><CircleHelp aria-hidden="true" size={19} />アプリ情報</h2><div className="setting-row"><strong>アプリ名</strong><span>ガクガクAIシステム</span></div><div className="setting-row"><strong>バージョン</strong><span>{packageJson.version}</span></div></AppCard>
-        <AppCard className="settings-section"><h2><Scale aria-hidden="true" size={19} />法的情報</h2><div className="legal-links"><Link className="legal-link" href="/privacy"><span>プライバシーポリシー</span><ChevronRight aria-hidden="true" size={17} /></Link><Link className="legal-link" href="/terms"><span>利用規約</span><ChevronRight aria-hidden="true" size={17} /></Link></div></AppCard>
-      </div>
-    </main>
-  );
+export const dynamic = "force-dynamic";
+export default async function SettingsPage() {
+  const current = await requireAnyRole(["personal", "student", "teacher"]);
+  const role = current.profile.role;
+  const supabaseReady = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const aiReady = Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_TEXT_MODEL && process.env.OPENAI_IMAGE_MODEL);
+  return <main className="shell"><PageHeader eyebrow="アカウントと環境" title="設定" description="プロフィール、外観、データ、アプリ情報を確認できます。" /><div className="settings-stack"><AppCard className="settings-section"><h2><UserRound size={19} />プロフィール</h2><div className="setting-row"><div><strong>{current.profile.displayName}</strong><span className="row-meta">{current.user.email}</span></div><StatusBadge>{experienceRoleLabels[role]}</StatusBadge></div><p className="caption">{experienceRoleDescriptions[role]}。ロールは自分では変更できません。</p></AppCard><AppCard className="settings-section"><h2><Image size={19} />外観</h2><Link className="legal-link" href="/settings/appearance"><span>AI生成・アップロード背景を設定</span><ChevronRight size={17} /></Link></AppCard><AppCard className="settings-section"><h2><Bot size={19} />サービス状態</h2><p className="muted">秘密値は画面に表示しません。</p><div className="setting-row"><strong>AI生成</strong><StatusBadge tone={aiReady ? "success" : "warning"}>{aiReady ? "利用可能" : "設定が必要"}</StatusBadge></div><div className="setting-row"><strong>データ保存</strong><StatusBadge tone={supabaseReady ? "success" : "danger"}>{supabaseReady ? "接続済み" : "設定が必要"}</StatusBadge></div></AppCard><BackupPanel /><AppCard className="settings-section"><h2><CircleHelp size={19} />アプリ情報</h2><div className="setting-row"><strong>アプリ名</strong><span>ガクガクAIシステム</span></div><div className="setting-row"><strong>バージョン</strong><span>{packageJson.version}</span></div></AppCard><AppCard className="settings-section"><h2><Scale size={19} />法的情報</h2><div className="legal-links"><Link className="legal-link" href="/privacy"><span>プライバシーポリシー</span><ChevronRight size={17} /></Link><Link className="legal-link" href="/terms"><span>利用規約</span><ChevronRight size={17} /></Link></div></AppCard></div></main>;
 }

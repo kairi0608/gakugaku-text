@@ -1,2 +1,3 @@
 import { NextResponse } from "next/server";
-export async function POST() { return NextResponse.json({ error: "Supabase版のインポートは管理者操作として今後実装します。" }, { status: 501 }); }
+import { requireApiUser } from "@/lib/auth/require-role";
+export async function POST() { await requireApiUser(); return NextResponse.json({ error: "安全性のため、ブラウザからの一括インポートには対応していません。エクスポートのみ利用できます。" }, { status: 405, headers: { Allow: "POST" } }); }

@@ -3,13 +3,14 @@ import Link from "next/link";
 import { EmptyState } from "@/components/design-system/EmptyState";
 import { PageHeader } from "@/components/design-system/PageHeader";
 import { StatusBadge } from "@/components/design-system/StatusBadge";
-import { parseExperienceRole, withExperienceRole } from "@/config/navigation";
+import { withExperienceRole } from "@/config/navigation";
 import { getAttemptHistory } from "@/lib/materials";
+import { requireAnyRole } from "@/lib/auth/require-role";
 
 export const dynamic = "force-dynamic";
 
-export default async function HistoryPage({ searchParams }: { searchParams: Promise<{ from?: string | string[] }> }) {
-  const role = parseExperienceRole((await searchParams).from) ?? "personal";
+export default async function HistoryPage() {
+  const { profile: { role } } = await requireAnyRole(["personal", "student", "teacher"]);
   let loadError = false;
   const rows = await getAttemptHistory().catch(() => { loadError = true; return []; });
   return (

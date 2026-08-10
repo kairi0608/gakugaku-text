@@ -1,4 +1,17 @@
 import { NextResponse } from "next/server";
 import { generationInputSchema } from "@/features/materials/shared/schemas";
-import { sampleDocument, saveMaterial } from "@/lib/materials";
-export async function POST(req: Request) { try { const input = generationInputSchema.parse(await req.json()); const id = await saveMaterial(sampleDocument(input)); return NextResponse.json({ id, imageStatus: process.env.OPENAI_API_KEY ? "queued" : "placeholder" }); } catch (error) { console.error("material generation failed", error); return NextResponse.json({ error: "入力内容を確認して、もう一度お試しください。" }, { status: 400 }); } }
+import { generateMaterial } from "@/features/material-generation/server/generate-material";
+import { requireApiRole } from "@/lib/auth/require-role";
+import { AiConfigurationError } from "@/lib/ai/errors";
+import { apiError } from "@/lib/http/api-error";
+
+export async function POST(request: Request) {
+  try {
+    const current = await requireApiRole(["personal", "student", "teacher"]);
+    const input = generationInputSchema.parse(await request.json());
+    return NextResponse.json(await generateMaterial(input, current.user.id), { status: 201 });
+  } catch (error) {
+    if (error instanceof AiConfigurationError) return NextResponse.json({ error: error.message }, { status: 503 });
+    return apiError(error, "AI教材を生成できませんでした。時間をおいて再度お試しください。");
+  }
+}

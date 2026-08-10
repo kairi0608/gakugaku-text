@@ -3,15 +3,16 @@ import Link from "next/link";
 import { EmptyState } from "@/components/design-system/EmptyState";
 import { PageHeader } from "@/components/design-system/PageHeader";
 import { StatusBadge } from "@/components/design-system/StatusBadge";
-import { parseExperienceRole, withExperienceRole } from "@/config/navigation";
+import { withExperienceRole } from "@/config/navigation";
 import { listMaterials } from "@/lib/materials";
+import { requireAnyRole } from "@/lib/auth/require-role";
 
 export const dynamic = "force-dynamic";
 
 const statusLabels: Record<string, string> = { draft: "下書き", ready: "学習可能", published: "公開済み" };
 
-export default async function MaterialsPage({ searchParams }: { searchParams: Promise<{ from?: string | string[] }> }) {
-  const role = parseExperienceRole((await searchParams).from) ?? "personal";
+export default async function MaterialsPage() {
+  const { profile: { role } } = await requireAnyRole(["personal", "student", "teacher"]);
   let loadError = false;
   const materials = await listMaterials().catch(() => { loadError = true; return []; });
   const title = role === "teacher" ? "教材管理" : role === "student" ? "課題・自主学習" : "教材一覧";
