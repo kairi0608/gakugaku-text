@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const publicPaths = ["/", "/privacy", "/terms", "/auth/login", "/auth/signup", "/auth/forgot-password", "/auth/reset-password", "/auth/callback"];
+const publicPaths = ["/", "/privacy", "/terms", "/auth/login", "/auth/signup", "/auth/check-email", "/auth/forgot-password", "/auth/reset-password", "/auth/callback"];
 const roleRoots = ["personal", "student", "teacher", "admin"] as const;
 
 function isPublic(pathname: string) {

@@ -14,6 +14,9 @@ const eslintConfig = [
   {
     ignores: [
       "node_modules/**",
+      "node_modules.auth-repair-backup/**",
+      "node_modules.empty-build-backup/**",
+      ".pnpm-store/**",
       ".next/**",
       ".next-production/**",
       "out/**",
@@ -21,6 +24,9 @@ const eslintConfig = [
       "next-env.d.ts",
       "gakugaku-material-hub/**",
       "gakugaku-material-hub-fixed/**",
+      "gakugaku-material-hub-supabase/**",
+      "gakugaku-ai-system-release/**",
+      "gakugaku-ai-system-role-release/**",
       "gakugaku-ai-system-production-ready/**",
     ],
   },

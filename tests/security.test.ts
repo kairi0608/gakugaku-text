@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(new URL("../supabase/migrations/003_auth_roles_and_customization.sql", import.meta.url), "utf8");
+const signupMigration = readFileSync(new URL("../supabase/migrations/004_auth_signup_roles_and_email_support.sql", import.meta.url), "utf8");
 const sourceFiles = [
   "../lib/supabase/client.ts",
   "../components/design-system/AppShell.tsx",
@@ -11,6 +12,7 @@ const sourceFiles = [
 const middleware = readFileSync(new URL("../middleware.ts", import.meta.url), "utf8");
 const teacherApi = readFileSync(new URL("../app/api/classrooms/route.ts", import.meta.url), "utf8");
 const adminPage = readFileSync(new URL("../app/admin/page.tsx", import.meta.url), "utf8");
+const adminRoleApi = readFileSync(new URL("../app/api/admin/users/[id]/role/route.ts", import.meta.url), "utf8");
 
 describe("authorization migration", () => {
   it("is non-destructive for existing product tables", () => {
@@ -25,8 +27,9 @@ describe("authorization migration", () => {
     expect(migration).toContain("student_id = auth.uid()");
     expect(migration).toContain("teacher_id = auth.uid()");
   });
-  it("prevents client-selected teacher and admin signup roles", () => {
-    expect(migration).toContain("requested_role in ('personal', 'student')");
+  it("allows teacher signup while preventing client-selected admin", () => {
+    expect(signupMigration).toContain("requested_role in ('personal', 'student', 'teacher')");
+    expect(signupMigration).not.toContain("requested_role in ('personal', 'student', 'teacher', 'admin')");
     expect(migration).toContain("role changes require administrator privileges");
   });
   it("keeps the asset bucket private and scoped by user path", () => {
@@ -51,6 +54,7 @@ describe("authorization migration", () => {
     expect(middleware).toContain('{ status: 401 }');
     expect(teacherApi).toContain('requireApiRole(["teacher"]');
     expect(adminPage).toContain('requireRole("admin")');
+    expect(adminRoleApi).toContain('id === current.user.id && input.role !== "admin"');
   });
   it("authorizes signed storage reads through asset ownership", () => {
     expect(migration).toContain("public.hub_can_read_storage_object(name)");
