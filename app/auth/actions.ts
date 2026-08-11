@@ -3,18 +3,14 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { AppUrlConfigurationError, getAppUrl } from "@/lib/auth/app-url";
-import { getAuthErrorCode, isAuthRateLimit, logAuthError } from "@/lib/auth/log-auth-error";
+import { getAuthEmailMessage, getAuthErrorCode, isAuthRateLimit, logAuthError } from "@/lib/auth/log-auth-error";
+import { safeRoleNext } from "@/lib/auth/safe-next";
 import { signupRoleSchema } from "@/lib/auth/signup-schema";
 import { gradeBands, isUserRole, roleDashboard } from "@/lib/auth/types";
 import { createClient } from "@/lib/supabase/server";
 
 const emailSchema = z.string().email("メールアドレスを確認してください。");
 const passwordSchema = z.string().min(8, "パスワードは8文字以上で入力してください。").max(128);
-const safeNext = (value: FormDataEntryValue | null) => {
-  const next = typeof value === "string" ? value : "";
-  return next.startsWith("/") && !next.startsWith("//") ? next : null;
-};
-
 function authRedirect(path: string, type: "error" | "message", message: string): never {
   redirect(`${path}?${type}=${encodeURIComponent(message)}`);
 }
@@ -50,7 +46,7 @@ export async function loginAction(formData: FormData) {
     logAuthError("login_profile", profileError ?? new Error("profile_role_missing"));
     authRedirect("/auth/login", "error", "プロフィールを確認できませんでした。");
   }
-  redirect(safeNext(formData.get("next")) ?? roleDashboard(profile.role));
+  redirect(safeRoleNext(formData.get("next"), profile.role) ?? roleDashboard(profile.role));
 }
 
 export async function signupAction(formData: FormData) {
@@ -85,7 +81,7 @@ export async function signupAction(formData: FormData) {
   });
   if (error) {
     logAuthError("signup", error);
-    authRedirect("/auth/signup", "error", isAuthRateLimit(error) ? "しばらく待ってからもう一度お試しください。" : "アカウントを作成できませんでした。入力内容またはメール設定を確認してください。");
+    authRedirect("/auth/signup", "error", getAuthEmailMessage(error));
   }
   if (data.session && data.user) {
     const { data: profile, error: profileError } = await supabase.from("profiles").select("role").eq("id", data.user.id).maybeSingle();
@@ -106,8 +102,8 @@ export async function resendSignupConfirmationAction(formData: FormData) {
   const { error } = await supabase.auth.resend({ type: "signup", email: parsed.data, options: { emailRedirectTo: `${appUrl}/auth/callback` } });
   if (error) {
     logAuthError("resend_signup", error);
-    if (isAuthRateLimit(error)) authRedirect("/auth/check-email", "error", "しばらく待ってからもう一度お試しください。");
-    if (getAuthErrorCode(error) !== "user_not_found") authRedirect("/auth/check-email", "error", "確認メールを再送できませんでした。時間をおいて再度お試しください。");
+    if (isAuthRateLimit(error)) authRedirect("/auth/check-email", "error", getAuthEmailMessage(error));
+    if (getAuthErrorCode(error) !== "user_not_found") authRedirect("/auth/check-email", "error", getAuthEmailMessage(error));
   }
   authRedirect("/auth/check-email", "message", "該当する登録がある場合、確認メールを再送しました。");
 }
