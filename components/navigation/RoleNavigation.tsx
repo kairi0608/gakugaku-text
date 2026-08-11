@@ -29,7 +29,7 @@ export function RoleNavigation({ role, gradeBand }: { role: ExperienceRole; grad
   return <>
     <aside className="app-sidebar" data-experience-role={role}>
       <Link className="brand" href={`/${role}`} aria-label={`${experienceRoleLabels[role]}ページ ホーム`}><span className="brand-mark"><BookOpenCheck aria-hidden="true" size={22} /></span><span>ガクガクAIシステム</span></Link>
-      <div className="role-chip"><span>{experienceRoleLabels[role]}ページ</span><small>認証済みロール</small></div>
+      <div className="role-chip"><span>{experienceRoleLabels[role]}</span></div>
       <nav className="sidebar-nav" aria-label={`${experienceRoleLabels[role]}ページのナビゲーション`}><NavigationItems role={role} gradeBand={gradeBand} /></nav>
       <div className="sidebar-note"><p>{experienceRoleDescriptions[role]}</p><Link href={withExperienceRole("/settings", role)}><UsersRound aria-hidden="true" size={14} />アカウント設定</Link></div>
     </aside>

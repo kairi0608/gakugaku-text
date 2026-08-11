@@ -17,7 +17,10 @@ describe("experience role navigation", () => {
   });
 
   it("keeps mobile navigation to five items or fewer", () => {
-    for (const items of Object.values(mobileNavigationByRole)) expect(items.length).toBeLessThanOrEqual(5);
+    for (const items of Object.values(mobileNavigationByRole)) {
+      expect(items.length).toBeLessThanOrEqual(5);
+      for (const item of items) expect(item.label.length).toBeLessThanOrEqual(5);
+    }
   });
 
   it("exposes the complete teacher workflow", () => {

@@ -17,7 +17,7 @@ copy .env.example .env.local
 pnpm dev
 ```
 
-環境変数を設定し、Supabaseへ `002_hub_cloud_schema.sql`、続いて `003_auth_roles_and_customization.sql` を適用してください。詳しくは [AUTH_SETUP](docs/AUTH_SETUP.md) と [SUPABASE_SETUP](docs/SUPABASE_SETUP.md) を参照してください。
+環境変数を設定し、Supabaseへ `002_hub_cloud_schema.sql`、`003_auth_roles_and_customization.sql`、`004_auth_signup_roles_and_email_support.sql` の順に適用してください。詳しくは [AUTH_SETUP](docs/AUTH_SETUP.md) と [SUPABASE_SETUP](docs/SUPABASE_SETUP.md) を参照してください。
 
 ## 必須環境変数
 
@@ -32,6 +32,8 @@ OPENAI_IMAGE_MODEL=
 ```
 
 Service RoleとOpenAIキーはサーバー専用です。クライアントへ公開しません。
+
+メール確認を使用するProduction環境では、Supabase DashboardでCustom SMTP設定が必要です。アプリの送信処理が成功しても配送完了とは限らないため、Auth LogsとSMTP Providerの配信ログを確認してください。
 
 ## 品質ゲート
 
@@ -56,4 +58,4 @@ pnpm build
 
 ## デプロイ前確認
 
-Vercelの環境変数、SupabaseのSite URL / Redirect URL、003 migration、最初の管理者ロールを確認します。実サービスを使うE2E（登録メール、AI生成、Private Storage、RLSの複数ユーザー分離）は、Productionとは別の検証Supabase/OpenAI環境で実施してから公開してください。
+Vercelの環境変数、SupabaseのSite URL / Redirect URL、002〜004 migration、Custom SMTP、最初の管理者ロールを確認します。実サービスを使うE2E（登録メール、AI生成、Private Storage、RLSの複数ユーザー分離）は、Productionとは別の検証Supabase/OpenAI環境で実施してから公開してください。

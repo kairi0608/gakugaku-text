@@ -76,9 +76,12 @@ describe("auth UI", () => {
     expect(signupUi).not.toContain('label: "管理者"');
   });
 
-  it("shows all four landing roles and sends admin to login", () => {
-    for (const title of ["個人", "生徒", "教師", "管理者"]) expect(landingUi).toContain(`title: "${title}"`);
-    expect(landingUi).toMatch(/title: "管理者"[\s\S]*?href: "\/auth\/login"/);
+  it("shows only the three public landing roles", () => {
+    for (const title of ["個人", "生徒", "教師"]) expect(landingUi).toContain(`title: "${title}"`);
+    expect(landingUi).not.toContain('title: "管理者"');
+    expect(landingUi).not.toContain("管理者としてログイン");
+    expect(landingUi).not.toContain("ShieldCheck");
+    expect(landingUi).toContain('href="/auth/login">ログイン');
   });
 
   it("allows the email waiting page without a session", () => {

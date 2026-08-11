@@ -24,7 +24,7 @@ export function AppTopbar() {
     <header className="app-topbar">
       <div className="mobile-brand" aria-label="ガクガクAIシステム">
         <span className="brand-mark"><BookOpenCheck aria-hidden="true" size={20} /></span>
-        <strong>ガクガクAIシステム</strong>
+        <strong>ガクガクAI</strong>
       </div>
       <p className="topbar-title">{title}</p>
       <span className="topbar-caption">AIとつくり、学び、成長する</span>

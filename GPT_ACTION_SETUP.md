@@ -1,0 +1,5 @@
+# GPT Actionセットアップ
+
+Custom GPTのActionsで`openapi/gakugaku-material-actions.yaml`を読み込み、server URLを本番URLへ変更します。AuthenticationはAPI Key、Auth TypeはBearerとして、`GAKUGAKU_ACTION_API_KEY`と同じ十分に長い秘密値を登録します。
+
+テストは`createMaterialDraft`へMaterialDocumentと一意なidempotencyKeyを送り、返されたclaim URLをブラウザで開きます。未ログインならログインし、同じURLへ戻って教材を取得します。同じidempotencyKeyは同じ応答になり、claim URLは24時間・一度限りです。Actionが行えるのは下書き作成・取得・未claim下書き修正だけです。公開や課題配布は本人の明示確認と権限が必要なためActionからは禁止しています。
