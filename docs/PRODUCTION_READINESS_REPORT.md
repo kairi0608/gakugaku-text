@@ -22,6 +22,8 @@
 
 - Server Component で取得した `role` と `gradeBand` を AppShell の初期値に渡し、個人 UI が一瞬表示される役割フリッカーを防止した。
 - 初期アカウント情報がない保護ページでは中立な読込表示を出し、`/api/auth/me` の結果が出るまで誤った役割 UI を描画しない。
+- `admin` を上位権限として扱い、個人・生徒・教師の通常ページと関連 API にアクセスできるよう統一した。管理者専用ページは引き続き管理者だけに限定する。
+- 管理者ホームと管理者ナビゲーションから、各通常ページへ直接移動できる入口を追加した。
 - ログイン時の重複ユーザー取得を削除し、フォーム送信中の無効化と表示を追加した。
 - Supabase の `token_hash` を検証する `/auth/confirm` を追加し、PKCE 用 `/auth/callback` と用途を分離した。
 - 登録確認メールの推奨テンプレート、Site URL、Redirect URL、初期管理者設定 SQL を `AUTH_SETUP.md` に明記した。
@@ -47,7 +49,7 @@
 | `pnpm install --frozen-lockfile` | 成功 |
 | `pnpm typecheck` | 成功 |
 | `pnpm lint` | 成功、警告・エラーなし |
-| `pnpm test` | 10 ファイル、71 テストすべて成功 |
+| `pnpm test` | 11 ファイル、75 テストすべて成功 |
 | `pnpm build` | Next.js 15.5.23 Production build 成功、29 静的ページ生成成功 |
 | 公開画面レスポンシブ確認 | 320〜1440px の8幅で横方向のはみ出しなし |
 | 認証確認ルート | `/auth/confirm` と `/auth/callback` の両方がビルド対象として生成 |
