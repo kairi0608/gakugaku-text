@@ -5,6 +5,7 @@ export function safeRoleNext(value: unknown, role: UserRole) {
 
   try {
     const parsed = new URL(value, "https://gakugaku.invalid");
+    if (role === "admin") return `${parsed.pathname}${parsed.search}${parsed.hash}`;
     const roleRoot = roleDashboard(role);
     if (parsed.pathname !== roleRoot && !parsed.pathname.startsWith(`${roleRoot}/`)) return null;
     return `${parsed.pathname}${parsed.search}${parsed.hash}`;

@@ -46,10 +46,14 @@ const teacher: ExperienceNavigationItem[] = [
   { href: withExperienceRole("/settings", "teacher"), label: "設定", icon: Settings, matchPaths: ["/settings"] },
 ];
 const admin: ExperienceNavigationItem[] = [
-  { href: "/admin", label: "ホーム", icon: Home },
+  { href: "/admin", label: "管理ホーム", icon: Home },
   { href: "/admin/users", label: "ユーザー", icon: Users },
   { href: "/admin/generations", label: "生成状況", icon: Activity },
   { href: "/admin/system", label: "システム", icon: ShieldCheck },
+  { href: "/personal", label: "個人ページ", icon: GraduationCap },
+  { href: "/student", label: "生徒ページ", icon: ClipboardList },
+  { href: "/teacher", label: "教師ページ", icon: BookOpen },
+  { href: withExperienceRole("/settings", "admin"), label: "設定", icon: Settings, matchPaths: ["/settings"] },
 ];
 
 export const navigationByRole: Record<ExperienceRole, ExperienceNavigationItem[]> = { personal, student, teacher, admin };
@@ -57,5 +61,5 @@ export const mobileNavigationByRole: Record<ExperienceRole, ExperienceNavigation
   personal: [personal[0], personal[1], personal[2], personal[3], personal[5]],
   student: [student[0], student[1], student[2], student[3], student[5]],
   teacher: [teacher[0], teacher[1], teacher[3], teacher[4], teacher[5]],
-  admin,
+  admin: [admin[0], admin[4], admin[5], admin[6], admin[3]],
 };

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { canAccessRoles } from "./access";
 import { getCurrentUser, type CurrentUser } from "./get-current-user";
 import { roleDashboard, type UserRole } from "./types";
 
@@ -20,13 +21,13 @@ export async function requireUser(): Promise<CurrentUser> {
 
 export async function requireRole(role: UserRole): Promise<CurrentUser> {
   const current = await requireUser();
-  if (current.profile.role !== role) redirect(roleDashboard(current.profile.role));
+  if (!canAccessRoles(current.profile.role, [role])) redirect(roleDashboard(current.profile.role));
   return current;
 }
 
 export async function requireAnyRole(roles: readonly UserRole[]): Promise<CurrentUser> {
   const current = await requireUser();
-  if (!roles.includes(current.profile.role)) redirect(roleDashboard(current.profile.role));
+  if (!canAccessRoles(current.profile.role, roles)) redirect(roleDashboard(current.profile.role));
   return current;
 }
 
@@ -38,6 +39,6 @@ export async function requireApiUser(): Promise<CurrentUser> {
 
 export async function requireApiRole(roles: readonly UserRole[]): Promise<CurrentUser> {
   const current = await requireApiUser();
-  if (!roles.includes(current.profile.role)) throw new AuthorizationError("この操作を行う権限がありません。");
+  if (!canAccessRoles(current.profile.role, roles)) throw new AuthorizationError("この操作を行う権限がありません。");
   return current;
 }
