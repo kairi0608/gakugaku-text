@@ -33,13 +33,13 @@ export async function loginAction(formData: FormData) {
   if (!parsed.success) authRedirect("/auth/login", "error", "メールアドレスとパスワードを確認してください。");
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data: signInData, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
     logAuthError("login", error);
     authRedirect("/auth/login", "error", "ログインできませんでした。入力内容を確認してください。");
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = signInData.user;
   if (!user) authRedirect("/auth/login", "error", "セッションを確認できませんでした。");
   const { data: profile, error: profileError } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   if (profileError || !profile || !isUserRole(profile.role)) {

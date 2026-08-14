@@ -52,7 +52,7 @@ main, section, article, header, footer, nav, form, fieldset, div { min-width: 0;
 :focus-visible { outline: 3px solid rgba(37, 99, 235, .28); outline-offset: 2px; }
 ::selection { background: #bfdbfe; }
 
-.app-shell { min-height: 100vh; }
+.app-shell { min-height: 100vh; position: relative; isolation: isolate; }
 .app-sidebar {
   position: fixed;
   inset: 0 auto 0 0;
@@ -80,7 +80,14 @@ main, section, article, header, footer, nav, form, fieldset, div { min-width: 0;
 .sidebar-note p { margin: 0 0 8px; }
 .sidebar-note a { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-weight: 700; }
 .mobile-bottom-nav { display: none; }
-.app-frame { min-height: 100vh; margin-left: var(--sidebar-width); }
+.app-frame {
+  position: relative;
+  z-index: 2;
+  width: calc(100% - var(--sidebar-width));
+  min-width: 0;
+  min-height: 100vh;
+  margin-left: var(--sidebar-width);
+}
 .app-topbar {
   position: sticky;
   top: 0;
@@ -349,7 +356,7 @@ main, section, article, header, footer, nav, form, fieldset, div { min-width: 0;
   body { padding-bottom: calc(70px + env(safe-area-inset-bottom)); font-size: 14px; }
   body:has(.public-shell) { padding-bottom: 0; }
   .app-sidebar { display: none; }
-  .app-frame { margin-left: 0; }
+  .app-frame { width: 100%; margin-left: 0; }
   .app-topbar { min-height: var(--topbar-height); padding: 7px 14px; }
   .mobile-brand { display: flex; font-size: 14px; }
   .mobile-brand .brand-mark { width: 28px; height: 28px; flex-basis: 28px; border-radius: 8px; }
@@ -413,8 +420,9 @@ main, section, article, header, footer, nav, form, fieldset, div { min-width: 0;
 
 /* Production application surfaces */
 html, body { max-width: 100%; }
-.app-shell { position: relative; isolation: isolate; }
-.app-sidebar, .app-frame, .mobile-bottom-nav { position: relative; z-index: 2; }
+.app-sidebar { z-index: 30; }
+.app-frame { z-index: 2; }
+.mobile-bottom-nav { z-index: 40; }
 .app-background { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .app-background-image { position: absolute; inset: -24px; background-repeat: no-repeat; }
 .app-background-overlay { position: absolute; inset: 0; background: #f4f7fb; min-opacity: .55; }
@@ -471,6 +479,9 @@ html, body { max-width: 100%; }
 .button.compact { min-height: 44px; padding: 6px 10px; }
 .error-text { width: 100%; color: var(--danger); }
 .diagnostic-value { max-width: min(100%, 580px); overflow-wrap: anywhere; text-align: right; }
+.diagnostic-list { display: grid; }
+.diagnostic-result { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.diagnostic-code { max-width: 100%; color: var(--danger); overflow-wrap: anywhere; font-size: 12px; }
 .submission-list { display: grid; gap: 16px; }
 .submission-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
 .review-form { margin-top: 16px; grid-template-columns: 130px minmax(0,1fr) auto; align-items: end; }
@@ -529,6 +540,7 @@ html, body { max-width: 100%; }
   .topbar-logout { padding-inline: 8px; font-size: .75rem; }
   .landing-roles, .signup-role-grid { grid-template-columns: 1fr; }
   .diagnostic-value { text-align: left; }
+  .diagnostic-result { justify-content: flex-start; }
 }
 @media (max-width: 340px) {
   .shell, .public-main { padding-inline: 12px; }

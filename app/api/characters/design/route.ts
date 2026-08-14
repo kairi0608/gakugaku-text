@@ -6,7 +6,7 @@ import { finishGeneration, startGeneration } from "@/lib/ai/generation-log";
 import { generateImage, getImageModel } from "@/lib/ai/image-provider";
 import { generateStructuredText, getTextModel } from "@/lib/ai/text-provider";
 import { requireApiRole } from "@/lib/auth/require-role";
-import { apiError } from "@/lib/http/api-error";
+import { apiError, apiServiceUnavailable } from "@/lib/http/api-error";
 import { createCharacter } from "@/lib/materials";
 import { saveVisualAsset } from "@/lib/storage/assets";
 import { createClient } from "@/lib/supabase/server";
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         if (storagePath) await db.storage.from("gakugaku-assets").remove([storagePath]);
       }
     }
-    if (error instanceof AiConfigurationError) return NextResponse.json({ error: error.message }, { status: 503 });
+    if (error instanceof AiConfigurationError) return apiServiceUnavailable(error, "キャラクターを生成できませんでした。管理者がAI設定を確認してください。");
     return apiError(error, "キャラクターとタマゴ画像を生成できませんでした。");
   }
 }

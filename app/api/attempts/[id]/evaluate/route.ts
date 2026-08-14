@@ -5,7 +5,7 @@ import { AiConfigurationError } from "@/lib/ai/errors";
 import { finishGeneration, startGeneration } from "@/lib/ai/generation-log";
 import { generateStructuredText, getTextModel } from "@/lib/ai/text-provider";
 import { requireApiUser } from "@/lib/auth/require-role";
-import { apiError } from "@/lib/http/api-error";
+import { apiError, apiServiceUnavailable } from "@/lib/http/api-error";
 import { saveAiFeedback } from "@/lib/materials";
 import { createClient } from "@/lib/supabase/server";
 
@@ -66,7 +66,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ ...result, overallScore, expAwarded: Number(expAwarded ?? 0) });
   } catch (error) {
     if (logId) await finishGeneration(logId, false, error instanceof Error ? error.name : "unknown_error");
-    if (error instanceof AiConfigurationError) return NextResponse.json({ error: error.message }, { status: 503 });
+    if (error instanceof AiConfigurationError) return apiServiceUnavailable(error, "AI評価を実行できませんでした。管理者がAI設定を確認してください。");
     return apiError(error, "AI評価を実行できませんでした。");
   }
 }

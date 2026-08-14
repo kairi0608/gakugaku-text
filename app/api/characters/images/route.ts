@@ -6,7 +6,7 @@ import { finishGeneration, startGeneration } from "@/lib/ai/generation-log";
 import { generateImage, getImageModel } from "@/lib/ai/image-provider";
 import { generateStructuredText, getTextModel } from "@/lib/ai/text-provider";
 import { requireApiRole } from "@/lib/auth/require-role";
-import { apiError } from "@/lib/http/api-error";
+import { apiError, apiServiceUnavailable } from "@/lib/http/api-error";
 import { getCharacter } from "@/lib/materials";
 import { saveVisualAsset } from "@/lib/storage/assets";
 import { createClient } from "@/lib/supabase/server";
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   } catch (error) {
     if (designLog) await finishGeneration(designLog, false, error instanceof Error ? error.name : "unknown_error");
     if (imageLog) await finishGeneration(imageLog, false, error instanceof Error ? error.name : "unknown_error");
-    if (error instanceof AiConfigurationError) return NextResponse.json({ error: error.message }, { status: 503 });
+    if (error instanceof AiConfigurationError) return apiServiceUnavailable(error, "進化画像を生成できませんでした。管理者がAI設定を確認してください。");
     return apiError(error, "進化画像を生成できませんでした。");
   }
 }

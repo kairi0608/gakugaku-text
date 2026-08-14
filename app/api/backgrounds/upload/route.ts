@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/auth/require-role";
 import { apiError } from "@/lib/http/api-error";
-import { normalizeUploadedImage, saveVisualAsset } from "@/lib/storage/assets";
+import { normalizeUploadedImage, saveVisualAsset, UploadValidationError } from "@/lib/storage/assets";
 
 export const runtime = "nodejs";
 export async function POST(request: Request) {
@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     const assetId = await saveVisualAsset({ ownerId: current.user.id, kind: "app-background", storagePath, buffer: image.buffer, width: image.width, height: image.height, generationType: "upload", metadata: { originalName: file.name.slice(0, 180) } });
     return NextResponse.json({ assetId, previewUrl: `/api/assets/${assetId}` }, { status: 201 });
   } catch (error) {
-    return apiError(error, error instanceof Error ? error.message : "背景画像をアップロードできませんでした。");
+    if (error instanceof UploadValidationError) return NextResponse.json({ error: error.message }, { status: error.status });
+    return apiError(error, "背景画像をアップロードできませんでした。");
   }
 }

@@ -4,7 +4,7 @@ import { AiConfigurationError } from "@/lib/ai/errors";
 import { finishGeneration, startGeneration } from "@/lib/ai/generation-log";
 import { generateImage, getImageModel } from "@/lib/ai/image-provider";
 import { requireApiRole } from "@/lib/auth/require-role";
-import { apiError } from "@/lib/http/api-error";
+import { apiError, apiServiceUnavailable } from "@/lib/http/api-error";
 import { saveVisualAsset } from "@/lib/storage/assets";
 
 const schema = z.object({ request: z.string().trim().min(3).max(1000), audienceStage: z.enum(["elementary", "middle", "high", "adult"]), colors: z.string().trim().min(1).max(200), mood: z.string().trim().min(1).max(200) }).strict();
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ assetId, previewUrl: `/api/assets/${assetId}` }, { status: 201 });
   } catch (error) {
     if (logId) await finishGeneration(logId, false, error instanceof Error ? error.name : "unknown_error");
-    if (error instanceof AiConfigurationError) return NextResponse.json({ error: error.message }, { status: 503 });
+    if (error instanceof AiConfigurationError) return apiServiceUnavailable(error, "背景画像を生成できませんでした。管理者がAI設定を確認してください。");
     return apiError(error, "背景画像を生成できませんでした。");
   }
 }

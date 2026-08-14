@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AuthCard, AuthNotice } from "../AuthCard";
+import { AuthSubmitButton } from "../AuthSubmitButton";
 import { loginAction } from "../actions";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; message?: string; next?: string }> }) {
@@ -11,7 +12,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <label className="field"><span className="field-label">メールアドレス</span><input name="email" type="email" autoComplete="email" required /></label>
       <label className="field"><span className="field-label">パスワード</span><input name="password" type="password" autoComplete="current-password" required /></label>
       <div className="auth-actions"><Link href="/auth/forgot-password">パスワードを忘れた方</Link></div>
-      <button className="button auth-submit" type="submit">ログイン</button>
+      <AuthSubmitButton idleLabel="ログイン" pendingLabel="ログイン中…" />
     </form>
   </AuthCard>;
 }

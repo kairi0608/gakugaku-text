@@ -5,7 +5,7 @@ import { finishGeneration, startGeneration } from "@/lib/ai/generation-log";
 import { generateImage, getImageModel } from "@/lib/ai/image-provider";
 import { generateStructuredText, getTextModel } from "@/lib/ai/text-provider";
 import { requireApiRole } from "@/lib/auth/require-role";
-import { apiError } from "@/lib/http/api-error";
+import { apiError, apiServiceUnavailable } from "@/lib/http/api-error";
 import { getMaterial, ownsMaterial, saveMaterial } from "@/lib/materials";
 import { attachVisualAssetsToMaterial, saveVisualAsset } from "@/lib/storage/assets";
 
@@ -56,7 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ assetId, materialId: id, versionNumber: material.version.versionNumber + 1 }, { status: 201 });
   } catch (error) {
     if (logId) await finishGeneration(logId, false, error instanceof Error ? error.name : "unknown_error");
-    if (error instanceof AiConfigurationError) return NextResponse.json({ error: error.message }, { status: 503 });
+    if (error instanceof AiConfigurationError) return apiServiceUnavailable(error, "教材画像を生成できませんでした。管理者がAI設定を確認してください。");
     return apiError(error, "教材画像を生成できませんでした。");
   }
 }
