@@ -8,8 +8,11 @@ const adminSystem = readFileSync(new URL("../app/admin/system/page.tsx", import.
 const authLogger = readFileSync(new URL("../lib/auth/log-auth-error.ts", import.meta.url), "utf8");
 
 describe("safe post-login destinations", () => {
-  it("allows only paths under the authenticated role root", () => {
+  it("keeps standard roles under their own root and lets administrators return to every internal page", () => {
     expect(safeRoleNext("/admin/users?tab=roles", "admin")).toBe("/admin/users?tab=roles");
+    expect(safeRoleNext("/personal", "admin")).toBe("/personal");
+    expect(safeRoleNext("/student/assignments", "admin")).toBe("/student/assignments");
+    expect(safeRoleNext("/teacher/classrooms", "admin")).toBe("/teacher/classrooms");
     expect(safeRoleNext("/student/assignments", "student")).toBe("/student/assignments");
     expect(safeRoleNext("/admin", "student")).toBeNull();
     expect(safeRoleNext("/personal", "teacher")).toBeNull();
