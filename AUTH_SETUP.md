@@ -14,6 +14,14 @@ Supabase Dashboard の **Authentication → Providers → Email** を開き、Em
 - 本番 Redirect URL: `https://<production-domain>/auth/callback`
 - Previewで認証を試す場合: 対象Preview URLの `/auth/callback`
 
+SSRで確認メールを安定して処理するため、**Authentication → Email Templates → Confirm signup** のリンクを次の形式にします。
+
+```html
+<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">メールアドレスを確認</a>
+```
+
+`/auth/confirm` はtoken hashをサーバー側で検証してCookieへ保存します。`/auth/callback` はパスワード再設定などのPKCE code交換用として引き続き許可します。確認リンクやtoken hashをログへ出力しないでください。
+
 Vercel の `NEXT_PUBLIC_APP_URL` には、メールリンクを最終的に戻したい環境のオリジンを末尾スラッシュなしで設定します。本番で未設定または不正なURLの場合、アプリはlocalhostへフォールバックせず設定エラーにします。
 
 ## 3. 環境変数
@@ -34,17 +42,38 @@ SQL EditorまたはSupabase CLIで、次の順番に適用します。
 
 ## 5. 最初の管理者
 
-最初の1人だけは、信頼できるSQL Editorで対象ユーザーを確認してから設定します。次のメールはダミーなので、実際の管理者メールへ置き換えてください。
+最初の1人だけは、信頼できるSupabase SQL Editorで対象ユーザーを確認してから設定します。アプリ内に初期管理者作成APIはありません。`ADMIN_EMAIL`は実際の管理者メールへ置き換えてください。
 
 ```sql
+select
+  u.id,
+  u.email,
+  p.display_name,
+  p.role
+from auth.users u
+left join public.profiles p
+  on p.id = u.id
+where u.email = 'ADMIN_EMAIL';
+
 update public.profiles
-set role = 'admin',
-    updated_at = now()
+set
+  role = 'admin',
+  updated_at = now()
 where id = (
   select id
   from auth.users
-  where email = 'admin@example.com'
+  where email = 'ADMIN_EMAIL'
 );
+
+select
+  u.id,
+  u.email,
+  p.display_name,
+  p.role
+from auth.users u
+left join public.profiles p
+  on p.id = u.id
+where u.email = 'ADMIN_EMAIL';
 ```
 
 2人目以降は `/admin/users` から設定します。管理者は公開登録では選べません。既存のAPIは、ログイン中の管理者が自分自身の管理者権限を外す操作を拒否します。
