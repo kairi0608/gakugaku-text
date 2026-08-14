@@ -1,0 +1,2 @@
+export function normalize(v:string){return v.trim().normalize("NFKC").toLowerCase().replace(/\s+/g,"")}
+export function autoGrade(type:string,answer:string,correct:string){if(type==="number")return Number(normalize(answer))===Number(normalize(correct));if(type==="multiple-choice"){const a=answer.split(",").map(normalize).sort(),b=correct.split(",").map(normalize).sort();return JSON.stringify(a)===JSON.stringify(b)}return normalize(answer)===normalize(correct)}
