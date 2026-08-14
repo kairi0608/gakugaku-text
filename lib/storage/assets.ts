@@ -8,13 +8,17 @@ const bucket = "gakugaku-assets";
 const allowedUploadTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
 const maxUploadBytes = 10 * 1024 * 1024;
 
+export class UploadValidationError extends Error {
+  readonly status = 400;
+}
+
 export async function normalizeUploadedImage(file: File) {
-  if (!allowedUploadTypes.has(file.type)) throw new Error("PNG、JPEG、WebPのみアップロードできます。");
-  if (file.size <= 0 || file.size > maxUploadBytes) throw new Error("画像は10MB以下にしてください。");
+  if (!allowedUploadTypes.has(file.type)) throw new UploadValidationError("PNG、JPEG、WebPのみアップロードできます。");
+  if (file.size <= 0 || file.size > maxUploadBytes) throw new UploadValidationError("画像は10MB以下にしてください。");
   const source = Buffer.from(await file.arrayBuffer());
   const metadata = await sharp(source, { failOn: "error", limitInputPixels: 40_000_000 }).metadata();
   if (!metadata.width || !metadata.height || metadata.width < 320 || metadata.height < 240 || metadata.width > 8000 || metadata.height > 8000) {
-    throw new Error("画像の寸法は320×240以上、8000×8000以下にしてください。");
+    throw new UploadValidationError("画像の寸法は320×240以上、8000×8000以下にしてください。");
   }
   const buffer = await sharp(source, { limitInputPixels: 40_000_000 }).rotate().resize({ width: 2560, height: 2560, fit: "inside", withoutEnlargement: true }).webp({ quality: 88 }).toBuffer();
   const normalized = await sharp(buffer).metadata();

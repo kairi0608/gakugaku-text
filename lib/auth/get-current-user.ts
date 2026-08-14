@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { User } from "@supabase/supabase-js";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isUserRole, type GradeBand, type Profile } from "./types";
 
@@ -18,7 +19,7 @@ function toProfile(row: Record<string, unknown>): Profile {
 
 export type CurrentUser = { user: User; profile: Profile };
 
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) return null;
@@ -27,4 +28,4 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   if (error) throw new Error(`プロフィールの取得に失敗しました: ${error.message}`);
   if (!data) throw new Error("プロフィールが見つかりません。管理者にお問い合わせください。");
   return { user, profile: toProfile(data) };
-}
+});

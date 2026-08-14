@@ -9,3 +9,8 @@ export function apiError(error: unknown, fallback: string) {
   console.error(fallback, error);
   return NextResponse.json({ error: fallback }, { status: 500 });
 }
+
+export function apiServiceUnavailable(error: unknown, fallback: string) {
+  console.error(fallback, error);
+  return NextResponse.json({ error: fallback, code: "service_not_configured" }, { status: 503 });
+}
