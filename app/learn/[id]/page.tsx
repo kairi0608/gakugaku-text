@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/design-system/PageHeader";
+import { canAccessRoles } from "@/lib/auth/access";
 import { requireAnyRole } from "@/lib/auth/require-role";
 import { getMaterial, getMaterialVersion } from "@/lib/materials";
 import { createClient } from "@/lib/supabase/server";
@@ -12,7 +13,7 @@ export default async function LearnPage({ params, searchParams }: { params: Prom
   const { id } = await params;
   const { assignment: assignmentId } = await searchParams;
   if (assignmentId) {
-    if (current.profile.role !== "student") notFound();
+    if (!canAccessRoles(current.profile.role, ["student"])) notFound();
     const db = await createClient();
     const { data: assignment } = await db.from("hub_assignments").select("id,title,material_version_id").eq("id", assignmentId).maybeSingle();
     if (!assignment) notFound();
