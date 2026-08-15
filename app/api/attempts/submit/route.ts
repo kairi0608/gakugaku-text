@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { saveCompletedAttempt } from "@/lib/materials";
-import { canAccessRoles } from "@/lib/auth/access";
 import { requireApiRole } from "@/lib/auth/require-role";
 import { apiError } from "@/lib/http/api-error";
 import { createClient } from "@/lib/supabase/server";
@@ -12,7 +11,7 @@ export async function POST(req: Request) {
     const input = schema.parse(await req.json());
     let fixedVersionId = input.materialVersionId;
     if (input.assignmentId) {
-      if (!canAccessRoles(current.profile.role, ["student"])) return NextResponse.json({ error: "課題提出は生徒アカウントで行ってください。" }, { status: 403 });
+      if (current.profile.role !== "student") return NextResponse.json({ error: "課題提出は生徒アカウントで行ってください。" }, { status: 403 });
       const db = await createClient();
       const { data: assignment } = await db.from("hub_assignments").select("material_version_id").eq("id", input.assignmentId).maybeSingle();
       if (!assignment) return NextResponse.json({ error: "課題が見つかりません。" }, { status: 404 });

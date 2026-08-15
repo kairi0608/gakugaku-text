@@ -1,33 +1,20 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { Suspense } from "react";
 import "./globals.css";
-import { SiteHeader } from "@/components/SiteHeader";
-import { APP_CONFIG } from "@/lib/config";
+import { AppShell } from "@/components/design-system/AppShell";
+import { getCurrentUser } from "@/lib/auth/get-current-user";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
-  const origin = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_SITE_URL;
-  const image = origin ? `${origin}/og.png` : undefined;
-  return {
-    title: `${APP_CONFIG.appName} | かしこい日程調整`,
-    description: APP_CONFIG.description,
-    openGraph: {
-      title: `${APP_CONFIG.appName} | かしこい日程調整`,
-      description: "空いているところだけ、次の人へ。回答するほど候補がすっきりする日程調整。",
-      type: "website",
-      images: image ? [{ url: image, width: 1736, height: 908, alt: `${APP_CONFIG.appName} かしこい日程調整` }] : undefined,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${APP_CONFIG.appName} | かしこい日程調整`,
-      description: APP_CONFIG.description,
-      images: image ? [image] : undefined,
-    },
-  };
-}
+export const metadata: Metadata = {
+  title: { default: "ガクガクAIシステム", template: "%s | ガクガクAIシステム" },
+  description: "AI教材、学習履歴、キャラクター成長、クラス課題をつなぐ学習システム",
+};
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="ja"><body><SiteHeader /><main>{children}</main><footer><strong>{APP_CONFIG.appName}</strong><span>空いている時間だけをつないで、みんなにやさしい日程調整を。</span><small>Prototypeでは回答をこの端末に保存します。</small></footer></body></html>;
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  const current = isSupabaseConfigured() ? await getCurrentUser().catch(error => {
+    console.error("[shell] initial account lookup failed", error instanceof Error ? error.name : "unknown_error");
+    return null;
+  }) : null;
+  const initialAccount = current ? { role: current.profile.role, gradeBand: current.profile.gradeBand } : null;
+  return <html lang="ja"><body><Suspense fallback={<div className="app-loading-shell" role="status">画面を読み込んでいます…</div>}><AppShell initialAccount={initialAccount}>{children}</AppShell></Suspense></body></html>;
 }

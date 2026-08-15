@@ -1,7 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { canAccessRoles } from "./lib/auth/access";
-import { isUserRole } from "./lib/auth/types";
 
 const publicPaths = ["/", "/privacy", "/terms", "/auth/login", "/auth/signup", "/auth/check-email", "/auth/forgot-password", "/auth/reset-password", "/auth/callback", "/auth/confirm"];
 const roleRoots = ["personal", "student", "teacher", "admin"] as const;
@@ -42,7 +40,7 @@ export async function middleware(request: NextRequest) {
     const root = pathname.split("/")[1];
     if (roleRoots.includes(root as (typeof roleRoots)[number])) {
       const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-      if (isUserRole(profile?.role) && !canAccessRoles(profile.role, [root as (typeof roleRoots)[number]])) {
+      if (profile?.role && profile.role !== root) {
         const destination = request.nextUrl.clone();
         destination.pathname = `/${profile.role}`;
         destination.search = "";
