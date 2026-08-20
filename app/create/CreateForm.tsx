@@ -2,7 +2,7 @@
 
 import { FileOutput, Settings2, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppCard } from "@/components/design-system/AppCard";
 import { MaterialGenerationProgress } from "@/components/materials/MaterialGenerationProgress";
 import { withExperienceRole, type ExperienceRole } from "@/config/navigation";
@@ -21,13 +21,25 @@ export function CreateForm({ role }: { role: ExperienceRole }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [step, setStep] = useState(0);
+  const [personalizationMode, setPersonalizationMode] = useState<"none" | "self" | "student">(role === "student" ? "self" : "none");
+  const [students, setStudents] = useState<Array<{ id: string; displayName: string; classroomName: string }>>([]);
+
+  useEffect(() => {
+    if (role !== "teacher") return;
+    fetch("/api/classrooms/students", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : { students: [] })
+      .then(value => setStudents(Array.isArray(value.students) ? value.students : []))
+      .catch(() => setStudents([]));
+  }, [role]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError("");
     const raw = Object.fromEntries(new FormData(event.currentTarget));
-    const body: Record<string, unknown> = { ...raw, questionCount: Number(raw.questionCount), useCharacter: raw.useCharacter === "on" };
+    const body: Record<string, unknown> = { ...raw, questionCount: Number(raw.questionCount), useCharacter: raw.useCharacter === "on", personalizationMode };
+    delete body.useLearningHistory;
+    if (!body.targetStudentId) delete body.targetStudentId;
     const timer = window.setInterval(() => setStep(value => Math.min(5, value + 1)), 650);
     try {
       const response = await fetch("/api/materials/generate", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -59,6 +71,15 @@ export function CreateForm({ role }: { role: ExperienceRole }) {
             <Select name="difficulty" label="難易度" />
             <Field name="questionCount" label="問題数" defaultValue="4" type="number" min="1" max="12" />
           </div>
+        </AppCard>
+
+        <AppCard className="form-section">
+          <div className="form-section-header"><span><Sparkles aria-hidden="true" size={18} /></span><h2>個別最適化</h2></div>
+          {role === "teacher" ? <>
+            <label className="field"><span>利用する履歴</span><select name="personalizationMode" value={personalizationMode} onChange={event => setPersonalizationMode(event.target.value as "none" | "student")}><option value="none">使用しない</option><option value="student">特定の生徒</option></select></label>
+            {personalizationMode === "student" && <label className="field"><span>対象の生徒</span><select name="targetStudentId" required defaultValue=""><option value="" disabled>生徒を選択</option>{students.map(student => <option value={student.id} key={student.id}>{student.displayName}（{student.classroomName}）</option>)}</select><small>担当クラスに所属する生徒だけが表示されます。</small></label>}
+          </> : <label className="choice"><input name="useLearningHistory" type="checkbox" checked={personalizationMode === "self"} onChange={event => setPersonalizationMode(event.target.checked ? "self" : "none")} /><span><strong>学習履歴を使って問題を調整</strong><span className="row-meta">本人の得点・誤答・教材形式・フィードバックだけを抽象化して使用します。</span></span></label>}
+          <p className="caption">履歴がない場合は架空の傾向を作らず、通常の教材を生成します。</p>
         </AppCard>
 
         <AppCard className="form-section">

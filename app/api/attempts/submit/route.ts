@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { answerSubmissionSchema } from "@/features/materials/shared/schemas";
 import { saveCompletedAttempt } from "@/lib/materials";
 import { canAccessRoles } from "@/lib/auth/access";
 import { requireApiRole } from "@/lib/auth/require-role";
 import { apiError } from "@/lib/http/api-error";
 import { createClient } from "@/lib/supabase/server";
-const schema = z.object({ materialId: z.string().uuid(), materialVersionId: z.string().uuid().optional(), assignmentId: z.string().uuid().optional(), learnerName: z.string().min(1).max(80), answers: z.array(z.object({ questionId: z.string(), answer: z.string().max(5000) }).strict()) }).strict();
+const schema = z.object({ attemptId: z.string().uuid().optional(), materialId: z.string().uuid(), materialVersionId: z.string().uuid().optional(), assignmentId: z.string().uuid().optional(), learnerName: z.string().min(1).max(80), answers: z.array(answerSubmissionSchema).min(1).max(30) }).strict();
 export async function POST(req: Request) {
   try {
     const current = await requireApiRole(["personal", "student", "teacher"]);
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
       if (!assignment) return NextResponse.json({ error: "課題が見つかりません。" }, { status: 404 });
       fixedVersionId = assignment.material_version_id;
     }
-    const result = await saveCompletedAttempt(input.materialId, input.learnerName, input.answers, fixedVersionId);
+    const result = await saveCompletedAttempt({ attemptId: input.attemptId, materialId: input.materialId, learnerName: input.learnerName, answers: input.answers, fixedVersionId });
     if (input.assignmentId) {
       const db = await createClient();
       const now = new Date().toISOString();

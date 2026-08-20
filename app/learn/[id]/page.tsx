@@ -23,5 +23,5 @@ export default async function LearnPage({ params, searchParams }: { params: Prom
   }
   const material = await getMaterial(id);
   if (!material) notFound();
-  return <main className="shell learn-shell"><PageHeader eyebrow={current.profile.role === "teacher" ? "教材プレビュー" : "自主学習"} title={material.title} description={`全${material.document.questions.length}問。1問ずつ自分のペースで進めましょう。`} /><LearnForm materialId={id} document={material.document} role={current.profile.role} learnerName={current.profile.displayName} /></main>;
+  return <main className="shell learn-shell"><PageHeader eyebrow={current.profile.role === "teacher" ? "教材プレビュー" : "自主学習"} title={material.title} description={`全${material.document.questions.length}問。1問ずつ自分のペースで進めましょう。`} /><LearnForm materialId={id} materialVersionId={material.version.id} document={material.document} role={current.profile.role} learnerName={current.profile.displayName} /></main>;
 }
