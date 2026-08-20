@@ -15,6 +15,7 @@ export type ShellAccount = { role: UserRole; gradeBand: GradeBand | null };
 export function AppShell({ children, initialAccount }: { children: ReactNode; initialAccount: ShellAccount | null }) {
   const pathname = usePathname();
   const isPublic = publicRoutes.has(pathname) || pathname.startsWith("/auth/");
+  const isPrintRoute = /^\/materials\/[^/]+\/print$/.test(pathname);
   const [account, setAccount] = useState<ShellAccount | null>(initialAccount);
   useEffect(() => {
     if (isPublic || initialAccount) return;
@@ -23,6 +24,7 @@ export function AppShell({ children, initialAccount }: { children: ReactNode; in
     return () => { active = false; };
   }, [initialAccount, isPublic]);
 
+  if (isPrintRoute) return <div className="print-route-shell">{children}</div>;
   if (isPublic) return <div className="app-shell public-shell"><SimpleHeader /><div className="public-frame"><div className="app-content">{children}</div><AppFooter /></div></div>;
   if (!account) return <div className="app-shell"><div className="app-loading-shell" role="status">アカウントを確認しています…</div></div>;
 
