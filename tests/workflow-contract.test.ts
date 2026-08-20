@@ -19,7 +19,9 @@ describe("UI to API to persistence workflow contracts", () => {
     expect(learn).toContain("/evaluate");
     const materials = source("../lib/materials.ts");
     expect(materials).toContain('db.rpc("hub_finalize_attempt_exp"');
-    expect(source("../app/api/attempts/[id]/evaluate/route.ts")).toContain("saveAiFeedback");
+    const evaluation = source("../app/api/attempts/[id]/evaluate/route.ts");
+    expect(evaluation).toContain('db.from("hub_feedback").insert');
+    expect(evaluation).toContain("feedback_json: evaluation");
   });
 
   it("connects teacher classroom, assignment, submission, and review workflows", () => {
