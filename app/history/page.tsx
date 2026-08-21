@@ -6,18 +6,23 @@ import { StatusBadge } from "@/components/design-system/StatusBadge";
 import { withExperienceRole } from "@/config/navigation";
 import { getAttemptHistory } from "@/lib/materials";
 import { requireAnyRole } from "@/lib/auth/require-role";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
-  const { profile: { role } } = await requireAnyRole(["personal", "student", "teacher"]);
+  const current = await requireAnyRole(["personal", "student", "teacher"]); const role = current.profile.role;
   let loadError = false;
-  const rows = await getAttemptHistory().catch(() => { loadError = true; return []; });
+  const db = await createClient();
+  const [rows, sessionsResult] = await Promise.all([getAttemptHistory().catch(() => { loadError = true; return []; }), db.from("hub_learning_sessions").select("id,subject,unit,score,status,exp_awarded,started_at,completed_at,feedback_status").eq("user_id", current.user.id).eq("mode", "self-practice").order("started_at", { ascending: false })]);
+  if (sessionsResult.error) loadError = true;
+  const sessions = sessionsResult.data ?? [];
   return (
     <main className="shell">
       <PageHeader eyebrow="学習の記録" title="学習履歴" description="提出した回答、採点、フィードバックを新しい順に確認できます。" />
       {loadError && <p className="notice error">学習履歴を読み込めませんでした。設定画面でSupabaseの接続情報を確認してください。</p>}
-      {rows.length ? <div className="history-list">{rows.map(row => <article className="history-row" key={row.id}><div><h2>{row.materialTitle ?? "教材"}</h2><p><Clock3 aria-hidden="true" size={13} /> {new Date(row.completedAt ?? row.startedAt).toLocaleString("ja-JP")}・{row.subject ?? "教科未設定"}{row.unit ? ` / ${row.unit}` : ""}・Version {row.versionNumber ?? "—"}</p><div className="history-statuses"><StatusBadge tone={row.status === "completed" ? "success" : "warning"}>{row.status === "completed" ? "完了" : "学習中"}</StatusBadge>{row.hasAiFeedback && <StatusBadge><Bot aria-hidden="true" size={13} /> AIフィードバックあり</StatusBadge>}{row.feedbackStatus === "failed" && <StatusBadge tone="warning">AI確認失敗</StatusBadge>}</div></div><strong className="score-badge">{row.score === null ? "—" : `${row.score}点`}</strong><Link className="button outline" href={`/history/${row.id}`}>詳細を見る</Link></article>)}</div> : !loadError && <EmptyState title="学習履歴はまだありません" description="教材を選んで回答を提出すると、日時と得点がここに残ります。" action={<Link className="button" href={withExperienceRole("/materials", role)}>学習を始める</Link>} />}
+      {sessions.length > 0 && <section className="session-history"><h2>自主チャレンジ</h2><div className="history-list">{sessions.map(session => <article className="history-row" key={session.id}><div><h2>{session.subject ?? "自主学習"}{session.unit ? ` / ${session.unit}` : ""}</h2><p><Clock3 aria-hidden="true" size={13} /> {new Date(session.completed_at ?? session.started_at).toLocaleString("ja-JP")}</p><div className="history-statuses"><StatusBadge tone={session.status === "completed" ? "success" : "warning"}>{session.status === "completed" ? "完了" : "学習中"}</StatusBadge>{session.feedback_status === "failed" && <StatusBadge tone="warning">AIの代替コメント</StatusBadge>}</div></div><strong className="score-badge">{session.score === null ? "—" : `${session.score}点`}</strong><Link className="button outline" href={`/student/practice/${session.id}`}>詳細を見る</Link></article>)}</div></section>}
+      {rows.length ? <section className="section-gap"><h2>教材・課題</h2><div className="history-list">{rows.map(row => <article className="history-row" key={row.id}><div><h2>{row.materialTitle ?? "教材"}</h2><p><Clock3 aria-hidden="true" size={13} /> {new Date(row.completedAt ?? row.startedAt).toLocaleString("ja-JP")}・{row.subject ?? "教科未設定"}{row.unit ? ` / ${row.unit}` : ""}・Version {row.versionNumber ?? "—"}</p><div className="history-statuses"><StatusBadge tone={row.status === "completed" ? "success" : "warning"}>{row.status === "completed" ? "完了" : "学習中"}</StatusBadge>{row.hasAiFeedback && <StatusBadge><Bot aria-hidden="true" size={13} /> AIフィードバックあり</StatusBadge>}{row.feedbackStatus === "failed" && <StatusBadge tone="warning">AI確認失敗</StatusBadge>}</div></div><strong className="score-badge">{row.score === null ? "—" : `${row.score}点`}</strong><Link className="button outline" href={`/history/${row.id}`}>詳細を見る</Link></article>)}</div></section> : !loadError && !sessions.length && <EmptyState title="学習履歴はまだありません" description="課題か自主チャレンジに取り組むと、日時と得点がここに残ります。" action={<Link className="button" href={role === "student" ? "/student/practice" : withExperienceRole("/materials", role)}>学習を始める</Link>} />}
     </main>
   );
 }

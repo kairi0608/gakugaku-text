@@ -4,8 +4,10 @@ import { FileOutput, Settings2, SlidersHorizontal, Sparkles } from "lucide-react
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppCard } from "@/components/design-system/AppCard";
+import { InterestCards, PresentationCards } from "@/components/learning/PreferenceCards";
 import { MaterialGenerationProgress } from "@/components/materials/MaterialGenerationProgress";
 import { withExperienceRole, type ExperienceRole } from "@/config/navigation";
+import type { InterestCategory, PresentationFamily } from "@/features/learning-session/shared/types";
 
 const selects = {
   difficulty: [["easy", "やさしい"], ["standard", "標準"], ["challenge", "チャレンジ"]],
@@ -16,12 +18,14 @@ const selects = {
   pageSize: [["screen", "画面"], ["a4-portrait", "A4縦"], ["a4-landscape", "A4横"]],
 } as const;
 
-export function CreateForm({ role }: { role: ExperienceRole }) {
+export function CreateForm({ role, initialPresentation = "illustration", initialInterest = "adventure" }: { role: ExperienceRole; initialPresentation?: PresentationFamily; initialInterest?: InterestCategory }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [step, setStep] = useState(0);
   const [personalizationMode, setPersonalizationMode] = useState<"none" | "self" | "student">(role === "student" ? "self" : "none");
+  const [presentationFamily, setPresentationFamily] = useState<PresentationFamily>(initialPresentation);
+  const [interestCategory, setInterestCategory] = useState<InterestCategory>(initialInterest);
   const [students, setStudents] = useState<Array<{ id: string; displayName: string; classroomName: string }>>([]);
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export function CreateForm({ role }: { role: ExperienceRole }) {
     setBusy(true);
     setError("");
     const raw = Object.fromEntries(new FormData(event.currentTarget));
-    const body: Record<string, unknown> = { ...raw, questionCount: Number(raw.questionCount), useCharacter: raw.useCharacter === "on", personalizationMode };
+    const body: Record<string, unknown> = { ...raw, questionCount: Number(raw.questionCount), useCharacter: raw.useCharacter === "on", personalizationMode, presentationFamily, interestCategory };
     delete body.useLearningHistory;
     if (!body.targetStudentId) delete body.targetStudentId;
     const timer = window.setInterval(() => setStep(value => Math.min(5, value + 1)), 650);
@@ -46,7 +50,7 @@ export function CreateForm({ role }: { role: ExperienceRole }) {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "教材を作成できませんでした");
       setStep(6);
-      if (role === "teacher") router.push("/teacher");
+      if (role === "teacher") router.push(`/teacher/materials/${result.id}/review`);
       else if (role === "student") router.push(withExperienceRole(`/learn/${result.id}`, role));
       else router.push(withExperienceRole(`/materials/${result.id}`, role));
     } catch (reason) {
@@ -84,6 +88,8 @@ export function CreateForm({ role }: { role: ExperienceRole }) {
 
         <AppCard className="form-section">
           <div className="form-section-header"><span><SlidersHorizontal aria-hidden="true" size={18} /></span><h2>見せ方・回答</h2></div>
+          <div className="preference-section"><h3>ビジュアルの方向</h3><PresentationCards value={presentationFamily} onChange={setPresentationFamily} />{presentationFamily === "real" && <p className="caption">AIが生成する場合は「図鑑風の正確な図解」です。実写真としては表示しません。教師が権利確認済みの写真を別途登録できます。</p>}</div>
+          <div className="preference-section"><h3>興味のテーマ</h3><InterestCards value={interestCategory} onChange={setInterestCategory} /></div>
           <div className="form-grid">
             <Select name="format" label="教材形式" />
             <Select name="textAmount" label="文章量" />

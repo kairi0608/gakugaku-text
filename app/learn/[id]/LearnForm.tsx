@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, CheckCircle2, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Gamepad2, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { AppCard } from "@/components/design-system/AppCard";
@@ -35,6 +35,8 @@ export function LearnForm({ materialId, materialVersionId, assignmentId, documen
   learnerName: string;
 }) {
   const [current, setCurrent] = useState(0);
+  const [started, setStarted] = useState(!assignmentId);
+  const [learningSessionId, setLearningSessionId] = useState<string>();
   const [answers, setAnswers] = useState<Record<string, AnswerPayload>>({});
   const [drawings, setDrawings] = useState<Record<string, Blob | null>>({});
   const [attemptId, setAttemptId] = useState<string>();
@@ -71,6 +73,18 @@ export function LearnForm({ materialId, materialVersionId, assignmentId, documen
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(typeof body.error === "string" ? body.error : "処理を完了できませんでした。");
     return body;
+  }
+
+  async function startAssignedGame() {
+    setPhase("starting"); setError("");
+    try {
+      const created = await requestJson("/api/learning-sessions", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ mode: "assigned", materialVersionId, assignmentId, feedbackMode: "after-set", presentationFamily: materialDocument.presentation.presentationFamily ?? "illustration", interestCategory: materialDocument.presentation.interestCategory ?? "adventure" }),
+      });
+      setLearningSessionId(String(created.id)); setStarted(true);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "課題を開始できませんでした。"); }
+    finally { setPhase("idle"); }
   }
 
   async function submit() {
@@ -132,6 +146,13 @@ export function LearnForm({ materialId, materialVersionId, assignmentId, documen
       } else {
         setPhase("grading");
       }
+      if (learningSessionId) {
+        try {
+          await requestJson(`/api/learning-sessions/${learningSessionId}/complete`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ attemptId: activeAttemptId }) });
+        } catch (sessionReason) {
+          setError(sessionReason instanceof Error ? `提出は保存されましたが、セッション記録を完了できませんでした: ${sessionReason.message}` : "提出は保存されましたが、セッション記録を完了できませんでした。");
+        }
+      }
       setDone(result);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "採点できませんでした。");
@@ -145,9 +166,13 @@ export function LearnForm({ materialId, materialVersionId, assignmentId, documen
     setAnswers({});
     setDrawings({});
     setAttemptId(undefined);
+    setLearningSessionId(undefined);
+    setStarted(!assignmentId);
     setDone(null);
     setError("");
   }
+
+  if (!started) return <AppCard className="game-start-card"><Gamepad2 aria-hidden="true" size={44} /><p className="eyebrow">CLASS QUEST</p><h2>全{materialDocument.questions.length}問のクエスト</h2><p>1問ずつ進み、最後にまとめて結果を確認します。途中の回答も安全に保存します。</p><button className="button game-start-button" type="button" disabled={busy} onClick={startAssignedGame}>{busy ? "準備中…" : "GAME START"}</button>{error && <p className="notice error" role="alert">{error}</p>}</AppCard>;
 
   if (done) return <section className="learn-result-layout">
     <AppCard className="learn-result">
