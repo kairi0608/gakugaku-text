@@ -25,7 +25,7 @@ export const questionSchema = z.object({
 export const materialDocumentSchema = z.object({
   version: z.literal(1),
   metadata: z.object({ title: z.string(), grade: z.string(), subject: z.string(), unit: z.string(), objective: z.string(), difficulty: z.enum(["easy", "standard", "challenge"]), description: z.string().optional() }).strict(),
-  presentation: z.object({ format: z.enum(["simple", "visual-guide", "adventure", "comic", "picture-book", "game-card", "worksheet-poster"]), pageSize: z.enum(["screen", "a4-portrait", "a4-landscape"]), visualTheme: z.string(), colorPalette: z.array(z.string()).min(2) }).strict(),
+  presentation: z.object({ format: z.enum(["simple", "visual-guide", "adventure", "comic", "picture-book", "game-card", "worksheet-poster"]), pageSize: z.enum(["screen", "a4-portrait", "a4-landscape"]), visualTheme: z.string(), colorPalette: z.array(z.string()).min(2), presentationFamily: z.enum(["real", "illustration"]).optional(), interestCategory: z.enum(["animals", "space", "sports", "vehicles", "nature", "adventure"]).optional() }).strict(),
   pages: z.array(z.object({ id: z.string(), pageNumber: z.number().int().positive(), backgroundAssetId: z.string().optional(), blocks: z.array(materialBlockSchema) }).strict()).min(1),
   questions: z.array(questionSchema).min(1),
   feedbackPolicy: z.object({ tone: z.enum(["gentle", "standard", "detailed"]), revealAnswer: z.boolean(), allowHints: z.boolean(), maxHints: z.number().int().nonnegative().optional() }).strict(),
@@ -48,6 +48,8 @@ export const generationInputSchema = z.object({
   useCharacter: z.boolean().default(false),
   personalizationMode: z.enum(["none", "self", "student"]).default("none"),
   targetStudentId: z.string().uuid().optional(),
+  presentationFamily: z.enum(["real", "illustration"]).default("illustration"),
+  interestCategory: z.enum(["animals", "space", "sports", "vehicles", "nature", "adventure"]).default("adventure"),
 }).strict().superRefine((input, context) => {
   if (input.personalizationMode === "student" && !input.targetStudentId) context.addIssue({ code: "custom", path: ["targetStudentId"], message: "対象の生徒を選択してください。" });
   if (input.personalizationMode !== "student" && input.targetStudentId) context.addIssue({ code: "custom", path: ["targetStudentId"], message: "対象生徒は個別調整時のみ指定できます。" });

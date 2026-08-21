@@ -1,15 +1,15 @@
 import "server-only";
 
-import { materialDocumentSchema, type generationInputSchema } from "@/features/materials/shared/schemas";
-import type { MaterialDocument } from "@/features/materials/shared/types";
-import { autoGrade } from "@/lib/grading";
+import { answerSubmissionSchema, materialDocumentSchema, type generationInputSchema } from "@/features/materials/shared/schemas";
+import type { AnswerPayload, MaterialDocument } from "@/features/materials/shared/types";
+import { answerMatchesQuestion, answerPayloadToText, gradeAnswer, requiresAiEvaluation } from "@/lib/learning/answers";
 import { createClient } from "@/lib/supabase/server";
 import type { z } from "zod";
 
 export type GenerationInput = z.infer<typeof generationInputSchema>;
-export type MaterialRow = { id: string; title: string; currentVersionId: string | null; status: string; createdAt: string; updatedAt: string };
+export type MaterialRow = { id: string; ownerId: string; title: string; currentVersionId: string | null; status: string; createdAt: string; updatedAt: string };
 export type VersionRow = { id: string; materialId: string; versionNumber: number; documentJson: MaterialDocument; createdAt: string };
-export type AttemptRow = { id: string; materialVersionId: string; learnerName: string; status: string; score: number | null; expAwarded: number; startedAt: string; completedAt: string | null };
+export type AttemptRow = { id: string; materialVersionId: string; learnerName: string; status: string; feedbackStatus: "not-required" | "pending" | "complete" | "failed"; score: number | null; expAwarded: number; startedAt: string; completedAt: string | null };
 export type CharacterRow = { id: string; name: string; stage: string; level: number; exp: number; designJson: Record<string, unknown>; createdAt: string; updatedAt: string };
 
 type DbError = { message: string } | null;
@@ -17,13 +17,14 @@ function fail(error: DbError, operation: string) {
   if (error) throw new Error(`${operation}: ${error.message}`);
 }
 function material(row: Record<string, unknown>): MaterialRow {
-  return { id: String(row.id), title: String(row.title), currentVersionId: row.current_version_id ? String(row.current_version_id) : null, status: String(row.status), createdAt: String(row.created_at), updatedAt: String(row.updated_at) };
+  return { id: String(row.id), ownerId: String(row.owner_id), title: String(row.title), currentVersionId: row.current_version_id ? String(row.current_version_id) : null, status: String(row.status), createdAt: String(row.created_at), updatedAt: String(row.updated_at) };
 }
 function version(row: Record<string, unknown>): VersionRow {
   return { id: String(row.id), materialId: String(row.material_id), versionNumber: Number(row.version_number), documentJson: materialDocumentSchema.parse(row.document_json), createdAt: String(row.created_at) };
 }
 function attempt(row: Record<string, unknown>): AttemptRow {
-  return { id: String(row.id), materialVersionId: String(row.material_version_id), learnerName: String(row.learner_name), status: String(row.status), score: row.score == null ? null : Number(row.score), expAwarded: Number(row.exp_awarded ?? 0), startedAt: String(row.started_at), completedAt: row.completed_at ? String(row.completed_at) : null };
+  const feedbackStatus = row.feedback_status === "pending" || row.feedback_status === "complete" || row.feedback_status === "failed" ? row.feedback_status : "not-required";
+  return { id: String(row.id), materialVersionId: String(row.material_version_id), learnerName: String(row.learner_name), status: String(row.status), feedbackStatus, score: row.score == null ? null : Number(row.score), expAwarded: Number(row.exp_awarded ?? 0), startedAt: String(row.started_at), completedAt: row.completed_at ? String(row.completed_at) : null };
 }
 function character(row: Record<string, unknown>): CharacterRow {
   return { id: String(row.id), name: String(row.name), stage: String(row.stage), level: Number(row.level), exp: Number(row.exp), designJson: (row.design_json ?? {}) as Record<string, unknown>, createdAt: String(row.created_at), updatedAt: String(row.updated_at) };
@@ -120,18 +121,23 @@ export async function getCharacter(id: string) {
 export async function getAttemptHistory() {
   const rows = await listAttempts();
   const ids = [...new Set(rows.map(row => row.materialVersionId))];
-  if (!ids.length) return rows.map(row => ({ ...row, versionNumber: null as number | null, materialTitle: null as string | null, materialId: null as string | null }));
+  if (!ids.length) return rows.map(row => ({ ...row, versionNumber: null as number | null, materialTitle: null as string | null, materialId: null as string | null, subject: null as string | null, unit: null as string | null, hasAiFeedback: false }));
   const db = await createClient();
-  const { data, error } = await db.from("hub_material_versions").select("id,version_number,material_id").in("id", ids);
+  const { data, error } = await db.from("hub_material_versions").select("id,version_number,material_id,document_json").in("id", ids);
   fail(error, "履歴の教材バージョン取得に失敗しました");
   const materialIds = [...new Set((data ?? []).map(row => String(row.material_id)))];
-  const result = materialIds.length ? await db.from("hub_materials").select("id,title").in("id", materialIds) : { data: [], error: null };
+  const [result, feedbackResult] = await Promise.all([
+    materialIds.length ? db.from("hub_materials").select("id,title").in("id", materialIds) : Promise.resolve({ data: [], error: null }),
+    db.from("hub_feedback").select("attempt_id").in("attempt_id", rows.map(row => row.id)).eq("source", "ai"),
+  ]);
   fail(result.error, "履歴の教材取得に失敗しました");
+  fail(feedbackResult.error, "履歴のフィードバック取得に失敗しました");
   const titles = new Map((result.data ?? []).map(row => [String(row.id), String(row.title)]));
-  const versions = new Map((data ?? []).map(row => [String(row.id), { versionNumber: Number(row.version_number), materialId: String(row.material_id) }]));
+  const versions = new Map((data ?? []).map(row => { const parsed = materialDocumentSchema.safeParse(row.document_json); return [String(row.id), { versionNumber: Number(row.version_number), materialId: String(row.material_id), subject: parsed.success ? parsed.data.metadata.subject : null, unit: parsed.success ? parsed.data.metadata.unit : null }] as const; }));
+  const feedbackAttempts = new Set((feedbackResult.data ?? []).map(row => String(row.attempt_id)));
   return rows.map(row => {
     const item = versions.get(row.materialVersionId);
-    return { ...row, versionNumber: item?.versionNumber ?? null, materialId: item?.materialId ?? null, materialTitle: item ? titles.get(item.materialId) ?? null : null };
+    return { ...row, versionNumber: item?.versionNumber ?? null, materialId: item?.materialId ?? null, materialTitle: item ? titles.get(item.materialId) ?? null : null, subject: item?.subject ?? null, unit: item?.unit ?? null, hasAiFeedback: feedbackAttempts.has(row.id) };
   });
 }
 
@@ -158,55 +164,112 @@ export async function createCharacter(input: { name: string; design: Record<stri
   return id;
 }
 
-export async function saveAiFeedback(input: { attemptId: string; questionId: string; feedbackText: string; score: number }) {
+export async function saveAiFeedback(input: { attemptId: string; questionId: string | null; feedbackText: string; score?: number | null; feedbackJson?: Record<string, unknown> }) {
   const { db } = await authenticatedDatabase();
-  const { error } = await db.from("hub_feedback").insert({ id: crypto.randomUUID(), attempt_id: input.attemptId, question_id: input.questionId, source: "ai", feedback_text: input.feedbackText, score: input.score, created_at: new Date().toISOString() });
+  const { error } = await db.from("hub_feedback").insert({ id: crypto.randomUUID(), attempt_id: input.attemptId, question_id: input.questionId, source: "ai", feedback_text: input.feedbackText, score: input.score ?? null, feedback_json: input.feedbackJson ?? {}, created_at: new Date().toISOString() });
   fail(error, "AIフィードバックの保存に失敗しました");
 }
 
-export async function saveCompletedAttempt(materialId: string, learnerName: string, inputAnswers: Array<{ questionId: string; answer: string }>, fixedVersionId?: string) {
-  const currentMaterial = fixedVersionId ? null : await getMaterial(materialId);
-  const fixedVersion = fixedVersionId ? await getMaterialVersion(fixedVersionId) : null;
+export async function saveCompletedAttempt(input: { materialId: string; learnerName: string; answers: Array<{ questionId: string; answer: AnswerPayload }>; fixedVersionId?: string; attemptId?: string }) {
+  const parsedAnswers = input.answers.map(item => answerSubmissionSchema.parse(item));
+  const currentMaterial = input.fixedVersionId ? null : await getMaterial(input.materialId);
+  const fixedVersion = input.fixedVersionId ? await getMaterialVersion(input.fixedVersionId) : null;
   if (!currentMaterial && !fixedVersion) throw new Error("教材が見つかりません");
-  if (fixedVersion && fixedVersion.materialId !== materialId) throw new Error("課題の教材バージョンが一致しません");
+  if (fixedVersion && fixedVersion.materialId !== input.materialId) throw new Error("課題の教材バージョンが一致しません");
   const document = currentMaterial?.document ?? fixedVersion!.documentJson;
   const materialVersionId = currentMaterial?.version.id ?? fixedVersion!.id;
   const { db, user } = await authenticatedDatabase();
-  const id = crypto.randomUUID();
+  const id = input.attemptId ?? crypto.randomUUID();
   const now = new Date().toISOString();
+  const answerByQuestion = new Map(parsedAnswers.map(item => [item.questionId, item.answer]));
+  if (answerByQuestion.size !== document.questions.length) throw new Error("すべての問題に回答してください。");
+  for (const question of document.questions) {
+    const answer = answerByQuestion.get(question.id);
+    if (!answer || !answerMatchesQuestion(question, answer)) throw new Error(`問題${question.order}の回答形式が一致しません。`);
+  }
+
+  if (input.attemptId) {
+    const existing = await db.from("hub_attempts").select("id,user_id,material_version_id").eq("id", id).maybeSingle();
+    if (existing.error) throw existing.error;
+    if (!existing.data || existing.data.user_id !== user.id || existing.data.material_version_id !== materialVersionId) throw new Error("学習記録が教材または利用者と一致しません。");
+  } else {
+    const created = await db.from("hub_attempts").insert({ id, material_version_id: materialVersionId, user_id: user.id, learner_name: input.learnerName, status: "in-progress", feedback_status: "not-required", started_at: now, exp_awarded: 0 });
+    fail(created.error, "学習記録の作成に失敗しました");
+  }
+
   let correct = 0;
   const answerRows: Array<Record<string, unknown>> = [];
   const feedbackRows: Array<Record<string, unknown>> = [];
-  for (const item of inputAnswers) {
-    const question = document.questions.find(candidate => candidate.id === item.questionId);
-    if (!question) continue;
-    const requiresAiEvaluation = question.answerType === "text" || question.answerType === "drawing";
-    const isCorrect = requiresAiEvaluation ? null : autoGrade(question.answerType, item.answer, question.correctAnswer);
+  let needsAi = false;
+  for (const question of document.questions) {
+    const answer = answerByQuestion.get(question.id)!;
+    const isCorrect = gradeAnswer(question, answer);
+    needsAi ||= requiresAiEvaluation(question);
     if (isCorrect) correct++;
-    answerRows.push({ id: crypto.randomUUID(), attempt_id: id, question_id: question.id, answer_text: item.answer, is_correct: isCorrect, created_at: now });
-    if (!requiresAiEvaluation) {
-      feedbackRows.push({ id: crypto.randomUUID(), attempt_id: id, question_id: question.id, source: "auto", feedback_text: isCorrect ? "正解です。よく考えました！" : "ヒントを使って、もう一度考えてみよう。", score: isCorrect ? 100 : 0, created_at: now });
+    if (answer.type === "drawing") {
+      const asset = await db.from("hub_answer_assets").select("id").eq("id", answer.assetId).eq("attempt_id", id).eq("question_id", question.id).eq("owner_id", user.id).maybeSingle();
+      if (asset.error) throw asset.error;
+      if (!asset.data) throw new Error(`問題${question.order}の手書き画像が見つかりません。`);
+    }
+    answerRows.push({ attempt_id: id, question_id: question.id, answer_text: answerPayloadToText(answer), answer_json: answer, is_correct: isCorrect });
+    if (!requiresAiEvaluation(question)) {
+      feedbackRows.push({ id: crypto.randomUUID(), attempt_id: id, question_id: question.id, source: "system", feedback_text: isCorrect ? "正解です。よく考えました！" : "解説を確認して、考え方を振り返りましょう。", score: isCorrect ? 100 : 0, feedback_json: { verdict: isCorrect ? "correct" : "incorrect" }, created_at: now });
     }
   }
   const score = Math.round(correct / Math.max(1, document.questions.length) * 100);
-  const { error } = await db.from("hub_attempts").insert({ id, material_version_id: materialVersionId, user_id: user.id, learner_name: learnerName, status: "completed", score, exp_awarded: 0, started_at: now, completed_at: now });
-  fail(error, "提出の保存に失敗しました");
   if (answerRows.length) {
-    const result = await db.from("hub_answers").insert(answerRows);
+    const result = await db.from("hub_answers").upsert(answerRows, { onConflict: "attempt_id,question_id" });
     fail(result.error, "回答の保存に失敗しました");
   }
+  const cleared = await db.from("hub_feedback").delete().eq("attempt_id", id).eq("source", "system");
+  fail(cleared.error, "以前の自動採点結果を整理できませんでした");
   if (feedbackRows.length) {
     const result = await db.from("hub_feedback").insert(feedbackRows);
     fail(result.error, "フィードバックの保存に失敗しました");
   }
+  const completed = await db.from("hub_attempts").update({ learner_name: input.learnerName, status: "completed", feedback_status: needsAi ? "pending" : "not-required", score, completed_at: now }).eq("id", id).eq("user_id", user.id);
+  fail(completed.error, "提出の完了状態を保存できませんでした");
   const { data: expAwarded, error: expError } = await db.rpc("hub_finalize_attempt_exp", { p_attempt_id: id });
   fail(expError, "EXPの付与に失敗しました");
-  return { id, score, autoCorrectCount: correct, expAwarded: Number(expAwarded ?? 0), feedback: score === 100 ? "全問正解！すばらしいです。" : "最後までよくがんばりました。間違えた問題を振り返ってみましょう。" };
+  return { id, score, autoCorrectCount: correct, expAwarded: Number(expAwarded ?? 0), feedbackStatus: needsAi ? "pending" as const : "not-required" as const, feedback: score === 100 && !needsAi ? "全問正解！すばらしいです。" : "回答を保存しました。結果を振り返って次の学習へつなげましょう。" };
+}
+
+export async function getAttemptDetail(id: string) {
+  const { db, user } = await authenticatedDatabase();
+  const attemptResult = await db.from("hub_attempts").select("*").eq("id", id).maybeSingle();
+  fail(attemptResult.error, "学習履歴の取得に失敗しました");
+  if (!attemptResult.data || attemptResult.data.user_id !== user.id) return null;
+  const attemptRow = attempt(attemptResult.data);
+  const versionResult = await db.from("hub_material_versions").select("*").eq("id", attemptRow.materialVersionId).maybeSingle();
+  fail(versionResult.error, "当時の教材バージョン取得に失敗しました");
+  if (!versionResult.data) return null;
+  const pinnedVersion = version(versionResult.data);
+  const [materialResult, answersResult, feedbackResult, assetsResult, submissionResult] = await Promise.all([
+    db.from("hub_materials").select("id,title").eq("id", pinnedVersion.materialId).maybeSingle(),
+    db.from("hub_answers").select("id,question_id,answer_text,answer_json,is_correct,created_at").eq("attempt_id", id),
+    db.from("hub_feedback").select("id,question_id,source,feedback_text,feedback_json,score,created_at").eq("attempt_id", id).order("created_at"),
+    db.from("hub_answer_assets").select("id,question_id,recognized_text,recognition_confidence,recognition_notes,created_at").eq("attempt_id", id),
+    db.from("hub_assignment_submissions").select("status,teacher_feedback,teacher_score,reviewed_at").eq("attempt_id", id).maybeSingle(),
+  ]);
+  fail(materialResult.error, "教材情報の取得に失敗しました");
+  fail(answersResult.error, "回答履歴の取得に失敗しました");
+  fail(feedbackResult.error, "フィードバック履歴の取得に失敗しました");
+  fail(assetsResult.error, "手書き履歴の取得に失敗しました");
+  fail(submissionResult.error, "教師フィードバックの取得に失敗しました");
+  return {
+    attempt: attemptRow,
+    material: { id: pinnedVersion.materialId, title: materialResult.data?.title ?? pinnedVersion.documentJson.metadata.title },
+    version: pinnedVersion,
+    answers: answersResult.data ?? [],
+    feedback: feedbackResult.data ?? [],
+    answerAssets: assetsResult.data ?? [],
+    submission: submissionResult.data,
+  };
 }
 
 export async function exportHubData() {
   const db = await createClient();
-  const tables = ["hub_materials", "hub_material_versions", "hub_attempts", "hub_answers", "hub_feedback", "hub_characters", "hub_character_assets", "hub_activity_logs", "hub_user_settings"] as const;
+  const tables = ["hub_materials", "hub_material_versions", "hub_attempts", "hub_answers", "hub_feedback", "hub_answer_assets", "hub_characters", "hub_character_assets", "hub_activity_logs", "hub_user_settings"] as const;
   const output: Record<string, unknown[]> = {};
   for (const table of tables) {
     const { data, error } = await db.from(table).select("*");

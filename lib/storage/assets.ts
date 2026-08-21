@@ -27,12 +27,14 @@ export async function normalizeUploadedImage(file: File) {
 
 export async function saveVisualAsset(input: {
   ownerId: string;
-  kind: ImagePurpose;
+  kind: ImagePurpose | "photo";
   storagePath: string;
   buffer: Buffer;
   width: number;
   height: number;
   generationType: "ai" | "upload";
+  assetSource?: "upload" | "ai-generated" | "system";
+  assetKind?: "photo" | "illustration" | "background" | "character" | "diagram";
   metadata?: Record<string, unknown>;
 }) {
   const prefix = `users/${input.ownerId}/`;
@@ -41,7 +43,8 @@ export async function saveVisualAsset(input: {
   const upload = await db.storage.from(bucket).upload(input.storagePath, input.buffer, { contentType: "image/webp", upsert: false, cacheControl: "3600" });
   if (upload.error) throw new Error(`画像の保存に失敗しました: ${upload.error.message}`);
   const id = crypto.randomUUID();
-  const { error } = await db.from("hub_visual_assets").insert({ id, owner_id: input.ownerId, kind: input.kind, storage_path: input.storagePath, mime_type: "image/webp", width: input.width, height: input.height, generation_type: input.generationType, metadata_json: input.metadata ?? {} });
+  const inferredKind = input.kind === "photo" ? "photo" : input.kind === "material-background" || input.kind === "app-background" ? "background" : ["avatar", "egg", "child", "learning-partner"].includes(input.kind) ? "character" : "illustration";
+  const { error } = await db.from("hub_visual_assets").insert({ id, owner_id: input.ownerId, kind: input.kind, storage_path: input.storagePath, mime_type: "image/webp", width: input.width, height: input.height, generation_type: input.generationType, asset_source: input.assetSource ?? (input.generationType === "ai" ? "ai-generated" : "upload"), asset_kind: input.assetKind ?? inferredKind, metadata_json: input.metadata ?? {} });
   if (error) {
     await db.storage.from(bucket).remove([input.storagePath]);
     throw new Error(`画像情報の保存に失敗しました: ${error.message}`);

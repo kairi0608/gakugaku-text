@@ -9,6 +9,7 @@ export const requiredDatabaseTables = [
   "hub_material_versions",
   "hub_attempts",
   "hub_answers",
+  "hub_answer_assets",
   "hub_feedback",
   "hub_characters",
   "hub_visual_assets",

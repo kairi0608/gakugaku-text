@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
-export type GenerationFeature = "material" | "material-image" | "evaluation" | "character-design" | "character-image" | "background";
+export type GenerationFeature = "material" | "material-image" | "evaluation" | "attempt-feedback" | "handwriting-recognition" | "character-design" | "character-image" | "background" | "adaptive-question" | "set-feedback" | "what-if";
 
 export async function startGeneration(input: { userId: string; feature: GenerationFeature; model: string; metadata?: Record<string, unknown> }) {
   const db = await createClient();

@@ -272,6 +272,22 @@ language sql stable security definer set search_path = '' as $$
   );
 $$;
 
+create or replace function public.hub_owns_material(p_material_id uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists(select 1 from public.hub_materials m where m.id = p_material_id and m.owner_id = auth.uid());
+$$;
+
+create or replace function public.hub_student_can_access_material(p_material_id uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select exists(
+    select 1
+    from public.hub_material_versions v
+    join public.hub_assignments a on a.material_version_id = v.id and a.published_at is not null
+    join public.hub_classroom_members cm on cm.classroom_id = a.classroom_id
+    where v.material_id = p_material_id and cm.student_id = auth.uid()
+  );
+$$;
+
 create or replace function public.hub_can_read_storage_object(p_name text) returns boolean
 language sql stable security definer set search_path = '' as $$
   select public.hub_is_admin() or exists(
@@ -397,9 +413,7 @@ create policy profiles_update on public.profiles for update to authenticated usi
 
 drop policy if exists materials_select on public.hub_materials;
 create policy materials_select on public.hub_materials for select to authenticated using (
-  owner_id = auth.uid() or public.hub_is_admin() or exists (
-    select 1 from public.hub_material_versions v where v.material_id = hub_materials.id and public.hub_student_can_access_version(v.id)
-  )
+  owner_id = auth.uid() or public.hub_is_admin() or public.hub_student_can_access_material(id)
 );
 drop policy if exists materials_insert on public.hub_materials;
 create policy materials_insert on public.hub_materials for insert to authenticated with check (owner_id = auth.uid());
@@ -410,14 +424,14 @@ create policy materials_delete on public.hub_materials for delete to authenticat
 
 drop policy if exists material_versions_select on public.hub_material_versions;
 create policy material_versions_select on public.hub_material_versions for select to authenticated using (
-  exists(select 1 from public.hub_materials m where m.id = material_id and m.owner_id = auth.uid())
+  public.hub_owns_material(material_id)
   or public.hub_is_admin()
   or public.hub_student_can_access_version(hub_material_versions.id)
 );
 drop policy if exists material_versions_insert on public.hub_material_versions;
-create policy material_versions_insert on public.hub_material_versions for insert to authenticated with check (exists(select 1 from public.hub_materials m where m.id = material_id and m.owner_id = auth.uid()));
+create policy material_versions_insert on public.hub_material_versions for insert to authenticated with check (public.hub_owns_material(material_id));
 drop policy if exists material_versions_update on public.hub_material_versions;
-create policy material_versions_update on public.hub_material_versions for update to authenticated using (exists(select 1 from public.hub_materials m where m.id = material_id and m.owner_id = auth.uid()));
+create policy material_versions_update on public.hub_material_versions for update to authenticated using (public.hub_owns_material(material_id)) with check (public.hub_owns_material(material_id));
 
 drop policy if exists attempts_select on public.hub_attempts;
 create policy attempts_select on public.hub_attempts for select to authenticated using (
@@ -554,6 +568,8 @@ grant select on public.hub_activity_logs to authenticated;
 grant all on table public.profiles, public.hub_user_settings, public.hub_visual_assets, public.hub_character_assets, public.hub_activity_logs, public.hub_classrooms, public.hub_classroom_members, public.hub_assignments, public.hub_assignment_submissions, public.hub_ai_generations to service_role;
 revoke all on function public.hub_save_material(jsonb, uuid), public.hub_join_classroom(text), public.hub_finalize_attempt_exp(uuid), public.hub_apply_character_asset(uuid) from public, anon;
 grant execute on function public.hub_save_material(jsonb, uuid), public.hub_join_classroom(text), public.hub_finalize_attempt_exp(uuid), public.hub_apply_character_asset(uuid) to authenticated;
+revoke all on function public.hub_owns_material(uuid), public.hub_student_can_access_material(uuid) from public, anon;
+grant execute on function public.hub_owns_material(uuid), public.hub_student_can_access_material(uuid) to authenticated;
 
 insert into storage.buckets(id, name, public, file_size_limit, allowed_mime_types)
 values('gakugaku-assets', 'gakugaku-assets', false, 10485760, array['image/png', 'image/jpeg', 'image/webp'])

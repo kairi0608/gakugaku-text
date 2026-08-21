@@ -25,7 +25,7 @@ describe("experience role navigation", () => {
 
   it("exposes the complete teacher workflow", () => {
     const labels = navigationByRole.teacher.map(item => item.label);
-    expect(labels).toEqual(["ホーム", "教材作成", "教材管理", "クラス", "課題", "提出", "設定"]);
+    expect(labels).toEqual(["ホーム", "教材作成", "教材管理", "クラス", "課題", "提出", "もしも", "設定"]);
   });
 });
 

@@ -17,7 +17,7 @@ copy .env.example .env.local
 pnpm dev
 ```
 
-環境変数を設定し、Supabaseへ `002_hub_cloud_schema.sql`、`003_auth_roles_and_customization.sql`、`004_auth_signup_roles_and_email_support.sql`、`005_learning_experience_completion.sql` の順に適用してください。005は手書き回答、AI総評、履歴詳細、非再帰RLSを追加する非破壊migrationです。詳しくは [AUTH_SETUP](docs/AUTH_SETUP.md) と [SUPABASE_SETUP](docs/SUPABASE_SETUP.md) を参照してください。
+環境変数を設定し、Supabaseへ `002_hub_cloud_schema.sql` から `006_jitojuku_pilot.sql` まで番号順に適用してください。005は手書き回答、AI総評、履歴詳細、非再帰RLS、006はLearning Session、気分、教材承認、What If、見せ方設定を追加する非破壊migrationです。詳しくは [AUTH_SETUP](docs/AUTH_SETUP.md) と [SUPABASE_SETUP](docs/SUPABASE_SETUP.md) を参照してください。
 
 ## 必須環境変数
 
@@ -58,4 +58,4 @@ pnpm build
 
 ## デプロイ前確認
 
-Vercelの環境変数、SupabaseのSite URL / Redirect URL、002〜005 migration、`gakugaku-assets` がprivateであること、Custom SMTP、最初の管理者ロールを確認します。実サービスを使うE2E（登録メール、AI生成、PDF印刷、手書きアップロード、AI評価、履歴再現、RLSの複数ユーザー分離）は、Productionとは別の検証Supabase/OpenAI環境で実施してから公開してください。
+Vercelの環境変数、SupabaseのSite URL / Redirect URL、002〜006 migration、`gakugaku-assets` がprivateであること、Custom SMTP、最初の管理者ロールを確認します。実サービスを使うE2E（登録メール、教材の生成→確認→承認→配布、Self Practice、What If、PDF印刷、手書き、AI評価、履歴再現、RLSの複数ユーザー分離）は、Productionとは別の検証Supabase/OpenAI環境で実施してから公開してください。

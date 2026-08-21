@@ -6,18 +6,22 @@ import { AiGenerationError } from "./errors";
 import { getTextModel } from "./config";
 export { getTextModel } from "./config";
 
-export async function generateStructuredText<TSchema extends z.ZodType>(input: {
+export type StructuredInputContent =
+  | { type: "input_text"; text: string }
+  | { type: "input_image"; image_url: string; detail: "low" | "high" | "auto" };
+
+export async function generateStructuredContent<TSchema extends z.ZodType>(input: {
   schema: TSchema;
   schemaName: string;
   instructions: string;
-  prompt: string;
+  content: StructuredInputContent[];
 }): Promise<z.infer<TSchema>> {
   const model = getTextModel();
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const response = await client.responses.create({
     model,
     instructions: input.instructions,
-    input: input.prompt,
+    input: [{ role: "user", content: input.content }],
     text: {
       format: {
         type: "json_schema",
@@ -33,4 +37,13 @@ export async function generateStructuredText<TSchema extends z.ZodType>(input: {
   } catch {
     throw new AiGenerationError("AI応答が指定したデータ構造を満たしませんでした。");
   }
+}
+
+export async function generateStructuredText<TSchema extends z.ZodType>(input: {
+  schema: TSchema;
+  schemaName: string;
+  instructions: string;
+  prompt: string;
+}): Promise<z.infer<TSchema>> {
+  return generateStructuredContent({ ...input, content: [{ type: "input_text", text: input.prompt }] });
 }

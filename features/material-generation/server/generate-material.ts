@@ -47,6 +47,8 @@ function generationPrompt(input: GenerationInput, learningProfile?: LearningProf
       additionalRequest: input.request,
       avoid: input.avoid,
       useCharacter: input.useCharacter,
+      presentationFamily: input.presentationFamily,
+      interestCategory: input.interestCategory,
       personalization: learningProfile ? {
         enabled: true,
         learningProfile,
@@ -58,7 +60,9 @@ function generationPrompt(input: GenerationInput, learningProfile?: LearningProf
         ],
       } : { enabled: false },
     },
-    imageRules: "imageBriefsは指定数ちょうど作る。背景はpage.backgroundAssetId、挿絵はillustrationブロックのassetIdへ同じbrief:...キーを設定する。画像内に文字やロゴを要求しない。",
+    imageRules: input.presentationFamily === "real"
+      ? "imageBriefsは指定数ちょうど作る。図鑑風の正確な図解・generated visualとして設計し、実在写真や撮影写真と偽装しない。背景はpage.backgroundAssetId、挿絵はillustrationブロックへ設定する。"
+      : "imageBriefsは指定数ちょうど作る。興味カテゴリに合うイラスト・冒険表現にする。背景はpage.backgroundAssetId、挿絵はillustrationブロックへ設定する。画像内に文字やロゴを要求しない。",
     answerRules: [
       "各questionには空でないcorrectAnswerと、その正答に一致するexplanationを設定する",
       "choiceのcorrectAnswerは正しいchoice.idを1つ、multiple-choiceは正しいchoice.idをカンマ区切りで設定する",
@@ -95,14 +99,15 @@ export async function generateMaterial(input: GenerationInput, userId: string, l
       prompt: generationPrompt(input, learningProfile),
     });
     if (plan.imageBriefs.length !== requestedImageCount(input.imageAmount)) throw new Error("画像設計数が指定と一致しません。");
-    const initial = validateGeneratedMaterial(fromAiMaterialDocument(plan.document), input, { allowAssetPlaceholders: true });
+    const aiDocument = fromAiMaterialDocument(plan.document);
+    const initial = validateGeneratedMaterial({ ...aiDocument, presentation: { ...aiDocument.presentation, presentationFamily: input.presentationFamily, interestCategory: input.interestCategory } }, input, { allowAssetPlaceholders: true });
     materialId = await createMaterialDraft(initial.metadata.title);
     const assets = new Map<string, string>();
     for (const brief of plan.imageBriefs) {
       const generated = await generateImage({ purpose: brief.purpose, prompt: brief.prompt, userId, landscape: brief.purpose === "material-background" });
       const assetId = crypto.randomUUID();
       const storagePath = `users/${userId}/materials/${materialId}/1/${assetId}.webp`;
-      const savedId = await saveVisualAsset({ ownerId: userId, kind: brief.purpose, storagePath, buffer: generated.buffer, width: generated.width, height: generated.height, generationType: "ai", metadata: { alt: brief.alt, pageId: brief.pageId, model: generated.model } });
+      const savedId = await saveVisualAsset({ ownerId: userId, kind: brief.purpose, storagePath, buffer: generated.buffer, width: generated.width, height: generated.height, generationType: "ai", assetSource: "ai-generated", assetKind: brief.purpose === "material-background" ? "background" : "illustration", metadata: { alt: brief.alt, pageId: brief.pageId, model: generated.model, disclosure: "AI generated visual; not an actual photograph" } });
       assets.set(brief.placeholderKey, savedId);
     }
     const finalDocument = validateGeneratedMaterial(replaceAssetReferences(initial, assets), input);
